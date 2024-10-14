@@ -28,7 +28,7 @@ public:
 
     static float sens;
     static float sens_menu;
-    static float sens_camera;
+    static float sens_cam;
 
     static float lod;
 

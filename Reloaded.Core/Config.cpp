@@ -23,7 +23,7 @@ std::wstring Config::directConnectPort;
 std::string Config::master_server_dns;
 
 float Config::sens_menu;
-float Config::sens_camera;
+float Config::sens_cam;
 float Config::sens;
 bool Config::security_acg;
 bool Config::security_dep;
@@ -49,7 +49,7 @@ void Config::Initialize(std::wstring& configFilePath) {
     directConnectPort = L"";
     master_server_dns = "scct-reloaded.duckdns.org:11000";
     sens_menu = 0.75;
-    sens_camera = 1.0;
+    sens_cam = 1.0;
     sens = 1.0;
     security_acg = false;
     security_dep = true;
@@ -79,7 +79,7 @@ void Config::Initialize(std::wstring& configFilePath) {
             force_max_refresh_rate = jsonConfig.value("force_max_refresh_rate", true);
             labs_borderless_fullscreen = jsonConfig.value("labs_borderless_fullscreen", false);
             sens_menu = jsonConfig.value("sens_menu", 0.75);
-            sens_camera = jsonConfig.value("sens_camera", 1.0);
+            sens_cam = jsonConfig.value("sens_cam", 1.0);
             sens = jsonConfig.value("sens", 1.0);
             server_list = jsonConfig.value("server_list", std::vector<std::string> {});
             security_acg = jsonConfig.value("security_acg", false);
@@ -142,6 +142,7 @@ void Config::ProcessCommandLine()
 }
 
 void WriteJsonWithComments(const nlohmann::json& jsonData, const std::map<std::string, std::string>& comments, std::ofstream& configFile) {
+    configFile << config_header;
     configFile << "{\n";
 
     bool first = true;
@@ -190,8 +191,8 @@ bool Config::Serialize() {
             comments["sens_menu"] = "Mouse sensitivity in menus";
             jsonConfig["sens_menu"] = sens_menu;
 
-            comments["sens_camera"] = "Mouse sensitivity for camera network and sticky cameras";
-            jsonConfig["sens_camera"] = sens_camera;
+            comments["sens_cam"] = "Mouse sensitivity for cam network and sticky cams";
+            jsonConfig["sens_cam"] = sens_cam;
 
             comments["sens"] = "Mouse sensitivity during gameplay";
             jsonConfig["sens"] = sens;
@@ -202,13 +203,13 @@ bool Config::Serialize() {
             comments["fov_cap"] = "Caps field of view for people who are sensitive to motion sickness.\n  // The default is 105.0 which gives a similar experience to many modern FPS games, but settings up to 112 will increase Merc FOV.";
             jsonConfig["fov_cap"] = fov_cap;
 
-            comments["force_max_refresh_rate"] = "Forces your game to run at your monitor's maximum resolution.";
+            comments["force_max_refresh_rate"] = "Forces your game to run at your monitor's maximum refresh rate.";
             jsonConfig["force_max_refresh_rate"] = force_max_refresh_rate;
 
             comments["labs_borderless_fullscreen"] = "Experimental feature.  Your game will be stuck in the top left corner\n  // if you don't use your monitor's native resolution.";
             jsonConfig["labs_borderless_fullscreen"] = labs_borderless_fullscreen;
 
-            comments["server_list"] = "";
+            comments["server_list"] = "Specify IP:PORT of servers which aren't on the master server.";
             jsonConfig["server_list"] = server_list;
 
             comments["security_acg"] = "Security feature which may be incompatible with certain software like OBS, so should normally be kept off.";

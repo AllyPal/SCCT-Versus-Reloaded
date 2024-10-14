@@ -645,13 +645,13 @@ void BufferInput(float yawInput, float pitchInput) {
     float originalPitchInput = pitchInput;
     if (Engine::gameState.inCameraView) {
         Engine::gameState.lvIn->lPlC()->Sens() = camSens;
-        yawInput *= Config::sens_camera * 10.0f;
+        yawInput *= Config::sens_cam * 10.0f;
         //camYawDelta += yawInput;
         //float quotient = camYawDelta / minMovement;
         //yawInput = minMovement * static_cast<int>(quotient);
         //camYawDelta -= yawInput;
 
-        pitchInput *= Config::sens_camera * 10.0f;
+        pitchInput *= Config::sens_cam * 10.0f;
         //camPitchDelta += pitchInput;
         //quotient = camPitchDelta / minMovement;
         //pitchInput = minMovement * static_cast<int>(quotient);

@@ -41,7 +41,7 @@ void OnToggleConsole() {
         console->MyFont() = *font->FirstFontArray();
 
         GameConsole::WriteGameConsole(L"======================");
-        GameConsole::WriteGameConsole(L"SCCT Versus Reloaded vI");
+        GameConsole::WriteGameConsole(console_version_message);
         GameConsole::WriteGameConsole(L"======================");
         GameConsole::WriteGameConsole(L" ");
         GameConsole::WriteGameConsole(L"Type 'help' to view the command list");
@@ -109,7 +109,7 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
     std::map<std::wstring, CommandHandler> commandHandlers;
 
     commandHandlers[L"widescreen"] = {
-            std::format(L"<true/false> - apply widescreen aspect ratio.", Config::sens),
+            L"<true/false> - apply widescreen aspect ratio.",
             [](const std::wstring& arg) {
             if (!arg.empty()) {
                 std::wstring lArg = StringOperations::toLowercase(arg);
@@ -130,13 +130,13 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
     };
 
     commandHandlers[L"fov_cap"] = {
-        L"<number> - The maximum FOV allowed.",
+        L"<number> - The maximum FOV allowed in first person Merc view.",
         [](const std::wstring& arg) {
         if (!arg.empty()) {
             auto frameLimit = std::stoi(arg);
             if (frameLimit < 90) {
                 frameLimit = 90;
-                GameConsole::WriteGameConsole(std::format(L" > minimum setting is {}", 90));
+                GameConsole::WriteGameConsole(std::format(L" > minimum setting is {}", 95));
             }
             else if (frameLimit > 112) {
                 frameLimit = 112;
@@ -151,7 +151,7 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
     };
 
     commandHandlers[L"sens"] = {
-        std::format(L"<number> - mouse sensitivity during gameplay.", Config::sens),
+        L"<number> - mouse sensitivity during gameplay.",
         [](const std::wstring& arg) {
         if (!arg.empty()) {
             Config::sens = std::stof(arg);
@@ -163,7 +163,7 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
     };
 
     commandHandlers[L"sens_menu"] = {
-        std::format(L"<number> - mouse sensitivity in menus.", Config::sens_menu),
+        L"<number> - mouse sensitivity in menus.",
         [](const std::wstring& arg) {
         if (!arg.empty()) {
             Config::sens_menu = std::stof(arg);
@@ -174,16 +174,16 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
         std::format(L" sens_menu {:.3f}", Config::sens_menu)
     };
 
-    commandHandlers[L"sens_camera"] = {
-        std::format(L"<number> - mouse sensitivity for camera network and sticky cameras.", Config::sens_menu),
+    commandHandlers[L"sens_cam"] = {
+        L"<number> - mouse sensitivity for cam network and sticky cams.",
         [](const std::wstring& arg) {
         if (!arg.empty()) {
-            Config::sens_camera = std::stof(arg);
+            Config::sens_cam = std::stof(arg);
         Config::Serialize();
         }
-        GameConsole::WriteGameConsole(std::format(L" > sens_camera {:.3f}", Config::sens_camera));
+        GameConsole::WriteGameConsole(std::format(L" > sens_cam {:.3f}", Config::sens_cam));
         },
-        std::format(L" sens_camera {:.3f}", Config::sens_camera)
+        std::format(L" sens_cam {:.3f}", Config::sens_cam)
     };
 
     commandHandlers[L"fps_client"] = {
@@ -238,15 +238,6 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
         }
     };
 
-    //commandHandlers[L"test1"] = {
-    //    L"- test1",
-    //    [](const std::wstring& arg) {
-    //        const uint8_t NOP = 0x90;
-    //        uint8_t nops[] = { NOP, NOP };
-    //        MemoryWriter::WriteBytes(0x10AA0535, nops, sizeof(nops));
-    //    }
-    //};
-
     commandHandlers[L"help"] = {
         L"- Display command list.",
         [](const std::wstring& arg) {
@@ -260,25 +251,6 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
             PrintConsoleValues();
         }
     };
-
-//    commandHandlers[L"lod"] = {
-//            std::format(L"<number> - higher numbers increase model detail at distance.", Config::lod),
-//            [](const std::wstring& arg) {
-//            if (!arg.empty()) {
-//                auto lod = std::stof(arg);
-//#ifndef _DEBUG
-//                if (lod < 1.0) {
-//                    lod = 1.0;
-//                    GameConsole::WriteGameConsole(std::format(L" > minimum setting 1.0 (SCCT Versus Default)", Config::fps_host));
-//                }
-//#endif
-//                Config::lod = lod;
-//                Config::Serialize();
-//            }
-//            GameConsole::WriteGameConsole(std::format(L" > lod {:.3f}", Config::lod));
-//            },
-//            std::format(L" lod {:.3f}", Config::lod)
-//    };
 
     Debug::CommandHandlers(&commandHandlers);
 
