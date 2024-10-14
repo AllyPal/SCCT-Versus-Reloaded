@@ -26,5 +26,7 @@ An unofficial community patch that brings enhancements and fixes for Splinter Ce
 * After the first run, SCCT_config.json will be created.  You can set your desired frame rate here.
 * It is not advised to run above 60 FPS whilst hosting
 
-## Latest Beta Build:
-https://nightly.link/AllyPal/SCCT-Versus-Reloaded/workflows/msbuild/main/Beta-Release.zip
+## Beta Builds
+Main: https://nightly.link/AllyPal/SCCT-Versus-Reloaded/workflows/msbuild/main/Beta-Release.zip
+
+Dev: https://nightly.link/AllyPal/SCCT-Versus-Reloaded/workflows/msbuild/dev/Beta-Release.zip
