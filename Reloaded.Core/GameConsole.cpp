@@ -109,7 +109,7 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
     std::map<std::wstring, CommandHandler> commandHandlers;
 
     commandHandlers[L"widescreen"] = {
-            L"<true/false> - apply widescreen aspect ratio.",
+            L"<true/false> - Apply widescreen aspect ratio.",
             [](const std::wstring& arg) {
             if (!arg.empty()) {
                 std::wstring lArg = StringOperations::toLowercase(arg);
@@ -151,7 +151,7 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
     };
 
     commandHandlers[L"sens"] = {
-        L"<number> - mouse sensitivity during gameplay.",
+        L"<number> - Mouse sensitivity during gameplay.",
         [](const std::wstring& arg) {
         if (!arg.empty()) {
             Config::sens = std::stof(arg);
@@ -163,7 +163,7 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
     };
 
     commandHandlers[L"sens_menu"] = {
-        L"<number> - mouse sensitivity in menus.",
+        L"<number> - Mouse sensitivity in menus.",
         [](const std::wstring& arg) {
         if (!arg.empty()) {
             Config::sens_menu = std::stof(arg);
@@ -175,7 +175,7 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
     };
 
     commandHandlers[L"sens_cam"] = {
-        L"<number> - mouse sensitivity for cam network and sticky cams.",
+        L"<number> - Mouse sensitivity for cam network and sticky cams.",
         [](const std::wstring& arg) {
         if (!arg.empty()) {
             Config::sens_cam = std::stof(arg);
