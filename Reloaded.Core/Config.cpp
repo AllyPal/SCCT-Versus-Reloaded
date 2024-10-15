@@ -4,6 +4,9 @@
 #include <iostream>
 #include "include/nlohmann/json.hpp"
 #include <vector>
+#include "logger.h"
+
+static bool d3d8OverrideCompatible(const std::wstring& path);
 
 static std::wstring configFilePathRef;
 int Config::fps_client;
@@ -11,6 +14,7 @@ int Config::fps_host;
 bool Config::alternate_frame_timing_mode;
 bool Config::animation_fix;
 bool Config::flashlight_rendering_fix;
+bool Config::flashlight_compatible_d3d8;
 bool Config::widescreen;
 float Config::ws_fov;
 bool Config::force_max_refresh_rate;
@@ -33,8 +37,12 @@ float Config::lod;
 
 std::vector<std::string> Config::server_list;
 
-void Config::Initialize(std::wstring& configFilePath) {
-    configFilePathRef = configFilePath;
+void Config::Initialize(std::wstring& directoryPath) {
+    configFilePathRef = directoryPath + L"\\SCCT_Versus.config";
+
+    auto d3d8Path = directoryPath + L"\\d3d8.dll";
+    flashlight_compatible_d3d8 = d3d8OverrideCompatible(d3d8Path);
+
     fps_client = 60;
     fps_host = 60;
     alternate_frame_timing_mode = false;
@@ -237,4 +245,37 @@ bool Config::Serialize() {
         std::cerr << "Could not open config file for writing. Check path and permissions." << std::endl;
     }
     return false;
+}
+
+static bool d3d8OverrideCompatible(const std::wstring& path) {
+    try {
+        DWORD attributes = GetFileAttributesW(path.c_str());
+        if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+            Logger::log("D3D8 override: None.");
+            return true;
+        }
+
+        HANDLE hFile = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (hFile == INVALID_HANDLE_VALUE) {
+            Logger::log("D3D8 override: Unable to check.");
+            return true;
+        }
+
+        LARGE_INTEGER fileSize;
+        bool success = GetFileSizeEx(hFile, &fileSize);
+        CloseHandle(hFile);
+
+        const LONGLONG d3d8to9_1_12_size = 123904;
+        if (success && fileSize.QuadPart == d3d8to9_1_12_size) {
+            Logger::log("D3D8 override: d3d8to9.");
+            return true;
+        }
+
+        Logger::log("D3D8 override: Unknown.");
+        return false;
+    }
+    catch (std::exception e) {
+        Logger::log(std::string("Error checking d3d8 override. Exception: ") + e.what());
+        return false;
+    }
 }

@@ -49,10 +49,8 @@ BOOL CALLBACK InitFunction(PINIT_ONCE InitOnce, PVOID Parameter, PVOID* Context)
     RedirectToConsole();
 
     Logger::Initialize(dllPath);
-    auto configPath = directoryPath + L"\\SCCT_Versus.config";
     Logger::log("");
-    Logger::log(L"Loading " + configPath);
-    Config::Initialize(configPath);
+    Config::Initialize(directoryPath);
     Logger::log(L"animation_fix: " + std::to_wstring(Config::animation_fix));
     Logger::log(L"fps_host:" + std::to_wstring(Config::fps_host));
     Logger::log(L"fps_client:" + std::to_wstring(Config::fps_client));

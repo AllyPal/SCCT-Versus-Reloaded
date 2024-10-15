@@ -10,6 +10,7 @@ public:
     static bool alternate_frame_timing_mode;
     static bool animation_fix;
     static bool flashlight_rendering_fix;
+    static bool flashlight_compatible_d3d8;
     static bool widescreen;
     static float ws_fov;
     static bool force_max_refresh_rate;
