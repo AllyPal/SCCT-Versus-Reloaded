@@ -12,7 +12,7 @@ bool Config::alternate_frame_timing_mode;
 bool Config::animation_fix;
 bool Config::flashlight_rendering_fix;
 bool Config::widescreen;
-float Config::fov_cap;
+float Config::ws_fov;
 bool Config::force_max_refresh_rate;
 bool Config::labs_borderless_fullscreen;
 
@@ -41,7 +41,7 @@ void Config::Initialize(std::wstring& configFilePath) {
     animation_fix = true;
     flashlight_rendering_fix = true;
     widescreen = true;
-    fov_cap = 105.0;
+    ws_fov = 105.0;
     force_max_refresh_rate = true;
     labs_borderless_fullscreen = false;
     useDirectConnect = false;
@@ -75,7 +75,7 @@ void Config::Initialize(std::wstring& configFilePath) {
             animation_fix = jsonConfig.value("animation_fix", true);
             flashlight_rendering_fix = jsonConfig.value("flashlight_rendering_fix", true);
             widescreen = jsonConfig.value("widescreen", true);
-            fov_cap = jsonConfig.value("fov_cap", 105.0);
+            ws_fov = jsonConfig.value("ws_fov", 105.0);
             force_max_refresh_rate = jsonConfig.value("force_max_refresh_rate", true);
             labs_borderless_fullscreen = jsonConfig.value("labs_borderless_fullscreen", false);
             sens_menu = jsonConfig.value("sens_menu", 0.75);
@@ -200,8 +200,8 @@ bool Config::Serialize() {
             comments["widescreen"] = "Use widescreen aspect ratio. With this off, your image will be stretched horizontally at widescreen resolutions.";
             jsonConfig["widescreen"] = widescreen;
 
-            comments["fov_cap"] = "Caps widescreen field of view for people who are sensitive to motion sickness.\n  // The default is 105.0 which gives a similar experience to many modern FPS games, but settings up to 112 will increase Merc FOV.";
-            jsonConfig["fov_cap"] = fov_cap;
+            comments["ws_fov"] = "Caps widescreen field of view for people who are sensitive to motion sickness.\n  // The default is 105.0 which gives a similar experience to many modern FPS games, but settings up to 112 will increase Merc FOV.";
+            jsonConfig["ws_fov"] = ws_fov;
 
             comments["force_max_refresh_rate"] = "Forces your game to run at your monitor's maximum refresh rate.";
             jsonConfig["force_max_refresh_rate"] = force_max_refresh_rate;

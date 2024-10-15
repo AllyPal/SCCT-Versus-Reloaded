@@ -129,7 +129,7 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
             std::format(L" widescreen {}", Config::widescreen ? L"true" : L"false")
     };
 
-    commandHandlers[L"fov_cap"] = {
+    commandHandlers[L"ws_fov"] = {
         L"<number> - The maximum widescreen FOV allowed in first person Merc view.",
         [](const std::wstring& arg) {
         if (!arg.empty()) {
@@ -142,12 +142,12 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
                 frameLimit = 112;
                 GameConsole::WriteGameConsole(std::format(L" > maximum setting is {}.", 112));
             }
-            Config::fov_cap = frameLimit;
+            Config::ws_fov = frameLimit;
             Config::Serialize();
         }
-        GameConsole::WriteGameConsole(std::format(L" > fov_cap {}", Config::fov_cap));
+        GameConsole::WriteGameConsole(std::format(L" > ws_fov {}", Config::ws_fov));
         },
-        std::format(L" fov_cap {}", Config::fov_cap)
+        std::format(L" ws_fov {}", Config::ws_fov)
     };
 
     commandHandlers[L"sens"] = {

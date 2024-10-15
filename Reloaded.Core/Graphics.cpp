@@ -888,7 +888,7 @@ double ConvertFOV(double horizontalFOV, double newAspectRatio) {
     double newHorizontalFOVRad = 2 * atan(tan(verticalFOVRad / 2) * newAspectRatio);
     double newHorizontalFOV = newHorizontalFOVRad * radToDegConversionFactor;
 
-    return min(newHorizontalFOV, Config::fov_cap);
+    return min(newHorizontalFOV, Config::ws_fov);
 }
 
 float ScaleFov(float fov) {

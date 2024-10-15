@@ -11,7 +11,7 @@ public:
     static bool animation_fix;
     static bool flashlight_rendering_fix;
     static bool widescreen;
-    static float fov_cap;
+    static float ws_fov;
     static bool force_max_refresh_rate;
     static bool labs_borderless_fullscreen;
     static std::vector<std::string> server_list;
