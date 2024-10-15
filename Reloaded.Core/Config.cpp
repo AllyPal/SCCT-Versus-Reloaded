@@ -200,7 +200,7 @@ bool Config::Serialize() {
             comments["widescreen"] = "Use widescreen aspect ratio. With this off, your image will be stretched horizontally at widescreen resolutions.";
             jsonConfig["widescreen"] = widescreen;
 
-            comments["fov_cap"] = "Caps field of view for people who are sensitive to motion sickness.\n  // The default is 105.0 which gives a similar experience to many modern FPS games, but settings up to 112 will increase Merc FOV.";
+            comments["fov_cap"] = "Caps widescreen field of view for people who are sensitive to motion sickness.\n  // The default is 105.0 which gives a similar experience to many modern FPS games, but settings up to 112 will increase Merc FOV.";
             jsonConfig["fov_cap"] = fov_cap;
 
             comments["force_max_refresh_rate"] = "Forces your game to run at your monitor's maximum refresh rate.";
