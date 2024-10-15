@@ -130,7 +130,7 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
     };
 
     commandHandlers[L"ws_fov"] = {
-        L"<number> - The maximum widescreen FOV allowed in first person Merc view.",
+        L"<number> - The maximum FOV allowed in first person Merc view.",
         [](const std::wstring& arg) {
         if (!arg.empty()) {
             auto frameLimit = std::stoi(arg);
