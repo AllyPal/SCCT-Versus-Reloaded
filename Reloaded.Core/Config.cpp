@@ -4,6 +4,9 @@
 #include <iostream>
 #include "include/nlohmann/json.hpp"
 #include <vector>
+#include "logger.h"
+
+static bool d3d8OverrideCompatible(const std::wstring& path);
 
 static std::wstring configFilePathRef;
 int Config::fps_client;
@@ -11,8 +14,9 @@ int Config::fps_host;
 bool Config::alternate_frame_timing_mode;
 bool Config::animation_fix;
 bool Config::flashlight_rendering_fix;
+bool Config::flashlight_compatible_d3d8;
 bool Config::widescreen;
-float Config::fov_cap;
+float Config::ws_fov;
 bool Config::force_max_refresh_rate;
 bool Config::labs_borderless_fullscreen;
 
@@ -23,7 +27,7 @@ std::wstring Config::directConnectPort;
 std::string Config::master_server_dns;
 
 float Config::sens_menu;
-float Config::sens_camera;
+float Config::sens_cam;
 float Config::sens;
 bool Config::security_acg;
 bool Config::security_dep;
@@ -33,15 +37,19 @@ float Config::lod;
 
 std::vector<std::string> Config::server_list;
 
-void Config::Initialize(std::wstring& configFilePath) {
-    configFilePathRef = configFilePath;
+void Config::Initialize(std::wstring& directoryPath) {
+    configFilePathRef = directoryPath + L"\\SCCT_Versus.config";
+
+    auto d3d8Path = directoryPath + L"\\d3d8.dll";
+    flashlight_compatible_d3d8 = d3d8OverrideCompatible(d3d8Path);
+
     fps_client = 60;
     fps_host = 60;
     alternate_frame_timing_mode = false;
     animation_fix = true;
     flashlight_rendering_fix = true;
     widescreen = true;
-    fov_cap = 105.0;
+    ws_fov = 105.0;
     force_max_refresh_rate = true;
     labs_borderless_fullscreen = false;
     useDirectConnect = false;
@@ -49,7 +57,7 @@ void Config::Initialize(std::wstring& configFilePath) {
     directConnectPort = L"";
     master_server_dns = "scct-reloaded.duckdns.org:11000";
     sens_menu = 0.75;
-    sens_camera = 1.0;
+    sens_cam = 1.0;
     sens = 1.0;
     security_acg = false;
     security_dep = true;
@@ -75,11 +83,11 @@ void Config::Initialize(std::wstring& configFilePath) {
             animation_fix = jsonConfig.value("animation_fix", true);
             flashlight_rendering_fix = jsonConfig.value("flashlight_rendering_fix", true);
             widescreen = jsonConfig.value("widescreen", true);
-            fov_cap = jsonConfig.value("fov_cap", 105.0);
+            ws_fov = jsonConfig.value("ws_fov", 105.0);
             force_max_refresh_rate = jsonConfig.value("force_max_refresh_rate", true);
             labs_borderless_fullscreen = jsonConfig.value("labs_borderless_fullscreen", false);
             sens_menu = jsonConfig.value("sens_menu", 0.75);
-            sens_camera = jsonConfig.value("sens_camera", 1.0);
+            sens_cam = jsonConfig.value("sens_cam", 1.0);
             sens = jsonConfig.value("sens", 1.0);
             server_list = jsonConfig.value("server_list", std::vector<std::string> {});
             security_acg = jsonConfig.value("security_acg", false);
@@ -142,6 +150,7 @@ void Config::ProcessCommandLine()
 }
 
 void WriteJsonWithComments(const nlohmann::json& jsonData, const std::map<std::string, std::string>& comments, std::ofstream& configFile) {
+    configFile << config_header;
     configFile << "{\n";
 
     bool first = true;
@@ -190,8 +199,8 @@ bool Config::Serialize() {
             comments["sens_menu"] = "Mouse sensitivity in menus";
             jsonConfig["sens_menu"] = sens_menu;
 
-            comments["sens_camera"] = "Mouse sensitivity for camera network and sticky cameras";
-            jsonConfig["sens_camera"] = sens_camera;
+            comments["sens_cam"] = "Mouse sensitivity for cam network and sticky cams";
+            jsonConfig["sens_cam"] = sens_cam;
 
             comments["sens"] = "Mouse sensitivity during gameplay";
             jsonConfig["sens"] = sens;
@@ -199,16 +208,16 @@ bool Config::Serialize() {
             comments["widescreen"] = "Use widescreen aspect ratio. With this off, your image will be stretched horizontally at widescreen resolutions.";
             jsonConfig["widescreen"] = widescreen;
 
-            comments["fov_cap"] = "Caps field of view for people who are sensitive to motion sickness.\n  // The default is 105.0 which gives a similar experience to many modern FPS games, but settings up to 112 will increase Merc FOV.";
-            jsonConfig["fov_cap"] = fov_cap;
+            comments["ws_fov"] = "Caps widescreen field of view for people who are sensitive to motion sickness.\n  // The default is 105.0 which gives a similar experience to many modern FPS games, but settings up to 112 will increase Merc FOV.";
+            jsonConfig["ws_fov"] = ws_fov;
 
-            comments["force_max_refresh_rate"] = "Forces your game to run at your monitor's maximum resolution.";
+            comments["force_max_refresh_rate"] = "Forces your game to run at your monitor's maximum refresh rate.";
             jsonConfig["force_max_refresh_rate"] = force_max_refresh_rate;
 
             comments["labs_borderless_fullscreen"] = "Experimental feature.  Your game will be stuck in the top left corner\n  // if you don't use your monitor's native resolution.";
             jsonConfig["labs_borderless_fullscreen"] = labs_borderless_fullscreen;
 
-            comments["server_list"] = "";
+            comments["server_list"] = "Specify IP:PORT of servers which aren't on the master server.";
             jsonConfig["server_list"] = server_list;
 
             comments["security_acg"] = "Security feature which may be incompatible with certain software like OBS, so should normally be kept off.";
@@ -236,4 +245,37 @@ bool Config::Serialize() {
         std::cerr << "Could not open config file for writing. Check path and permissions." << std::endl;
     }
     return false;
+}
+
+static bool d3d8OverrideCompatible(const std::wstring& path) {
+    try {
+        DWORD attributes = GetFileAttributesW(path.c_str());
+        if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+            Logger::log("D3D8 override: None.");
+            return true;
+        }
+
+        HANDLE hFile = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (hFile == INVALID_HANDLE_VALUE) {
+            Logger::log("D3D8 override: Unable to check.");
+            return true;
+        }
+
+        LARGE_INTEGER fileSize;
+        bool success = GetFileSizeEx(hFile, &fileSize);
+        CloseHandle(hFile);
+
+        const LONGLONG d3d8to9_1_12_size = 123904;
+        if (success && fileSize.QuadPart == d3d8to9_1_12_size) {
+            Logger::log("D3D8 override: d3d8to9.");
+            return true;
+        }
+
+        Logger::log("D3D8 override: Unknown.");
+        return false;
+    }
+    catch (std::exception e) {
+        Logger::log(std::string("Error checking d3d8 override. Exception: ") + e.what());
+        return false;
+    }
 }

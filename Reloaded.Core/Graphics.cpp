@@ -888,7 +888,7 @@ double ConvertFOV(double horizontalFOV, double newAspectRatio) {
     double newHorizontalFOVRad = 2 * atan(tan(verticalFOVRad / 2) * newAspectRatio);
     double newHorizontalFOV = newHorizontalFOVRad * radToDegConversionFactor;
 
-    return min(newHorizontalFOV, Config::fov_cap);
+    return min(newHorizontalFOV, Config::ws_fov);
 }
 
 float ScaleFov(float fov) {
@@ -1120,7 +1120,7 @@ void Graphics::Initialize()
     //MemoryWriter::WriteJump(D3DPPEntry, D3DPP);
     MemoryWriter::WriteJump(AddEnhancedGuiResolutionsEntry, AddEnhancedGuiResolutions);
 
-    if (Config::flashlight_rendering_fix) {
+    if (Config::flashlight_rendering_fix && Config::flashlight_compatible_d3d8) {
         // IDirect3D8_CheckDeviceFormat D3DFMT_D24X8 & D3DFMT_D16
         uint8_t d3dTypeRef[] = { D3DDEVTYPE_REF };
         MemoryWriter::WriteBytes(0x1095BEC8, d3dTypeRef, sizeof(d3dTypeRef));

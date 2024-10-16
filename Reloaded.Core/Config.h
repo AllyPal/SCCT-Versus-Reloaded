@@ -10,8 +10,9 @@ public:
     static bool alternate_frame_timing_mode;
     static bool animation_fix;
     static bool flashlight_rendering_fix;
+    static bool flashlight_compatible_d3d8;
     static bool widescreen;
-    static float fov_cap;
+    static float ws_fov;
     static bool force_max_refresh_rate;
     static bool labs_borderless_fullscreen;
     static std::vector<std::string> server_list;
@@ -28,7 +29,7 @@ public:
 
     static float sens;
     static float sens_menu;
-    static float sens_camera;
+    static float sens_cam;
 
     static float lod;
 

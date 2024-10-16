@@ -12,6 +12,11 @@ constexpr int fps_host_min = 30;
 constexpr int fps_host_max = 165;
 constexpr int fps_client_min = 30;
 constexpr int fps_client_max = 270;
+constexpr const wchar_t console_version_message[] = L"SCCT Versus Reloaded vI";
+constexpr const char config_header[] = "/*\n"
+"	SCCT Versus Reloaded V1\n"
+"	Website: https://github.com/AllyPal/SCCT-Versus-Reloaded\n"
+"*/\n\n";
 
 #ifdef _DEBUG
 	#define debug_cout std::cout << "DEBUG: "
