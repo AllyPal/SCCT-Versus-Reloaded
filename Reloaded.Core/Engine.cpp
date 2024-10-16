@@ -723,6 +723,80 @@ __declspec(naked) void PatchActor() {
     }
 }
 
+static float ScreenShakeAccumulator(float timeDelta, float& accumulator, std::chrono::steady_clock::time_point& lastUpdate, int id) {
+    auto alternateDeltaMs = std::chrono::duration<float>(Graphics::lastFrameTime - lastUpdate).count();
+    lastUpdate = Graphics::lastFrameTime;
+    if (alternateDeltaMs < 1.0 && timeDelta < alternateDeltaMs) {
+        timeDelta = alternateDeltaMs;
+    }
+
+    float result = 0;
+    accumulator += timeDelta;
+    if (accumulator > 0.0333333333333333) {
+        result = accumulator;
+        accumulator = 0;
+    }
+
+    return result;
+}
+
+static int ScreenShake1Entry = 0x10A96327;
+__declspec(naked) void ScreenShake1() {
+    static int Return = 0x10A9632D;
+    static float TimeDelta = 0.0;
+    static float Accumulator = 0.0;
+    static std::chrono::steady_clock::time_point LastUpdate;
+    __asm {
+        mov     edx, [ecx + 0x54C]
+        mov dword ptr[TimeDelta], edx
+        pushad
+    }
+    TimeDelta = ScreenShakeAccumulator(TimeDelta, Accumulator, LastUpdate, 1);
+    __asm {
+        popad
+        mov     edx, dword ptr[TimeDelta]
+        jmp dword ptr[Return]
+    }
+}
+
+static int ScreenShake2Entry = 0x10A963E3;
+__declspec(naked) void ScreenShake2() {
+    static int Return = 0x10A963E9;
+    static float TimeDelta = 0.0;
+    static float Accumulator = 0.0;
+    static std::chrono::steady_clock::time_point LastUpdate;
+    __asm {
+        mov     edx, [ecx + 0x54C]
+        mov dword ptr[TimeDelta], edx
+        pushad
+    }
+    TimeDelta = ScreenShakeAccumulator(TimeDelta, Accumulator, LastUpdate, 2);
+    __asm {
+        popad
+        mov     edx, dword ptr[TimeDelta]
+        jmp dword ptr[Return]
+    }
+}
+
+//static int ScreenShake3Entry = 0x10A9641C;
+//__declspec(naked) void ScreenShake3() {
+//    static int Return = 0x10A96422;
+//    static float TimeDelta = 0.0;
+//    static float Accumulator = 0.0;
+//    static std::chrono::steady_clock::time_point LastUpdate;
+//    __asm {
+//        mov     eax, dword ptr[eax + 0x54C]
+//        mov dword ptr[TimeDelta], eax
+//        pushad
+//    }
+//    TimeDelta = ScreenShakeAccumulator(TimeDelta, Accumulator, LastUpdate, 3);
+//    __asm {
+//        popad
+//        fmul dword ptr[TimeDelta]
+//        jmp dword ptr[Return]
+//    }
+//}
+
 void Engine::Initialize()
 {
     InitLabelOverrides();
@@ -740,6 +814,9 @@ void Engine::Initialize()
     MemoryWriter::WriteJump(SPlaProCreatedEntry, SPlaProCreated);
     MemoryWriter::WriteJump(PitchYawInputEntry, PitchYawInput);
     MemoryWriter::WriteJump(PatchActorEntry, PatchActor);
+
+    MemoryWriter::WriteJump(ScreenShake1Entry, ScreenShake1);
+    MemoryWriter::WriteJump(ScreenShake2Entry, ScreenShake2);
 
     if (Config::sticky_camera_fix) {
         MemoryWriter::WriteJump(StickyCamContextMenuBlockEntry, StickyCamContextMenuBlock);
