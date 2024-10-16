@@ -27,6 +27,4 @@ An unofficial community patch that brings enhancements and fixes for Splinter Ce
 * It is not advised to run above 60 FPS whilst hosting
 
 ## Beta Builds
-Main: https://nightly.link/AllyPal/SCCT-Versus-Reloaded/workflows/msbuild/main/Beta-Release.zip
-
-Dev: https://nightly.link/AllyPal/SCCT-Versus-Reloaded/workflows/msbuild/dev/Beta-Release.zip
+Main: https://nightly.link/AllyPal/SCCT-Versus-Reloaded/workflows/msbuild/main/Beta.zip
