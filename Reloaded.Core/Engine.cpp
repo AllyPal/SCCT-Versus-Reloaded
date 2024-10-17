@@ -459,6 +459,9 @@ void OnNewState(int newState, PlC* plc) {
         if (wcscmp(StateName(newState), L"s_ShortLadder_S_Jump") == 0) {
             Engine::gameState.inCoop = true;
         }
+        else if (wcscmp(StateName(newState), L"s_PlayerJump") == 0) {
+            Engine::gameState.lastJumpTime = Graphics::lastFrameTime;
+        }
         break;
     }
 }
@@ -797,6 +800,34 @@ __declspec(naked) void ScreenShake2() {
 //    }
 //}
 
+bool CanWaistLedge() {
+    auto timeSinceJump = std::chrono::duration<float>(Graphics::lastFrameTime - Engine::gameState.lastJumpTime).count();
+    const float minimumTime = 1.0f / 64;
+    return timeSinceJump >= minimumTime;
+}
+
+int WaistLedgeEntry = 0x10AB2DF0;
+__declspec(naked) void WaistLedge() {
+    static int Return = 0x10AB2DF7;
+    static bool allowed = false;
+    __asm {
+        pushad
+    }
+    allowed = CanWaistLedge();
+    __asm {
+        popad
+        cmp byte ptr[allowed], 1
+        je canGrab
+        ret
+
+        canGrab:
+        push    ecx
+        push    0x0
+        lea     ecx, [esp + 0x4]
+        jmp dword ptr[Return]
+    }
+}
+
 void Engine::Initialize()
 {
     InitLabelOverrides();
@@ -817,6 +848,8 @@ void Engine::Initialize()
 
     MemoryWriter::WriteJump(ScreenShake1Entry, ScreenShake1);
     MemoryWriter::WriteJump(ScreenShake2Entry, ScreenShake2);
+
+    MemoryWriter::WriteJump(WaistLedgeEntry, WaistLedge);
 
     if (Config::sticky_camera_fix) {
         MemoryWriter::WriteJump(StickyCamContextMenuBlockEntry, StickyCamContextMenuBlock);

@@ -18,6 +18,7 @@ struct State {
 	LvIn* lvIn = nullptr;
 	bool inCameraView = false;
 	bool inCoop = false;
+	std::chrono::steady_clock::time_point lastJumpTime;
 };
 
 class Engine
