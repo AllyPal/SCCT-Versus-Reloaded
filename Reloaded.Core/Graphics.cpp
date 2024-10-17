@@ -887,7 +887,9 @@ double ConvertFOV(double horizontalFOV, double newAspectRatio) {
     double verticalFOVRad = 2 * atan(tan(horizontalFOVRad / 2) * originalAspectRatio);
     double newHorizontalFOVRad = 2 * atan(tan(verticalFOVRad / 2) * newAspectRatio);
     double newHorizontalFOV = newHorizontalFOVRad * radToDegConversionFactor;
-
+    if (Engine::gameState.inCameraView) {
+        return newHorizontalFOV;
+    }
     return min(newHorizontalFOV, Config::ws_fov);
 }
 
