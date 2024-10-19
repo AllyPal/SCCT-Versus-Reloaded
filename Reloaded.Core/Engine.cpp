@@ -48,10 +48,11 @@ static bool IsScctEnhanced3_4_Plus() {
     static int ScctEnhancedIdentifier = 0x10C42DA4;
     static char identifier;
     __asm {
-        mov al, byte ptr[ScctEnhancedIdentifier]
+        mov eax, dword ptr[ScctEnhancedIdentifier]
+        mov al, byte ptr[eax]
         mov byte ptr[identifier], al
     }
-    return identifier == 3;
+    return identifier == '3';
 }
 
 static char ScctVersion() {
