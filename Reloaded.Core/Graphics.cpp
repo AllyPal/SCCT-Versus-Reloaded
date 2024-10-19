@@ -1056,8 +1056,7 @@ int Graphics::GetResolutionCount() {
     return displayModePairs.size();
 }
 
-//static int ScctEnhancedIdentifier = 0x10C42DA4;
-static int AddEnhancedGuiResolutionsEntry = 0x10B0FC5E;
+static int AddGuiResolutionsEntry = 0x10B0FC5E;
 __declspec(naked) void AddEnhancedGuiResolutions() {
     static int MaxResolutionIndex;
     static int Return = 0x10B0FC64;
@@ -1068,10 +1067,6 @@ __declspec(naked) void AddEnhancedGuiResolutions() {
     __asm{
         popad
         push dword ptr[MaxResolutionIndex]
-        //mov eax, dword ptr[ScctEnhancedIdentifier]
-        //mov al, byte ptr[eax]
-        //cmp al, '3'
-        //jne notEnhanced
         push 0x10C42C74
         jmp dword ptr[Return]
     }
@@ -1120,7 +1115,7 @@ void Graphics::Initialize()
     MemoryWriter::WriteJump(presented2Entry, presented);
 
     //MemoryWriter::WriteJump(D3DPPEntry, D3DPP);
-    MemoryWriter::WriteJump(AddEnhancedGuiResolutionsEntry, AddEnhancedGuiResolutions);
+    MemoryWriter::WriteJump(AddGuiResolutionsEntry, AddEnhancedGuiResolutions);
 
     if (Config::flashlight_rendering_fix && Config::flashlight_compatible_d3d8) {
         // IDirect3D8_CheckDeviceFormat D3DFMT_D24X8 & D3DFMT_D16

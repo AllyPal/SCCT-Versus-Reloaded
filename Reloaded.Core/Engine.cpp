@@ -24,11 +24,41 @@ __declspec(naked) void SetLvIn() {
     }
 }
 
+wchar_t* gameVersionIdentifier = nullptr;
+__declspec(naked) void SetGameVersionIdentifier() {
+    __asm {
+        mov dword ptr[gameVersionIdentifier], 0x10C42D94
+        ret
+    }
+}
+
 bool Engine::IsListenServer() {
     if (Engine::gameState.lvIn == nullptr) {
         return false;
     }
     return Engine::gameState.lvIn->netMode() == NetMode::ListenServer;
+}
+
+static bool IsScct1_2() {
+    static bool cachedResult = (gameVersionIdentifier != nullptr && wcscmp(gameVersionIdentifier, L"SC3_PC_518_5") == 0);
+    return cachedResult;
+}
+
+static bool IsScctEnhanced3_4_Plus() {
+    static int ScctEnhancedIdentifier = 0x10C42DA4;
+    static char identifier;
+    __asm {
+        mov al, byte ptr[ScctEnhancedIdentifier]
+        mov byte ptr[identifier], al
+    }
+    return identifier == 3;
+}
+
+static char ScctVersion() {
+    if (IsScctEnhanced3_4_Plus()) {
+        return enhanced_scct_version;
+    }
+    return default_scct_version;
 }
 
 int InstaFixEntry = 0x10AB8DAA;
@@ -544,11 +574,21 @@ static void InitLabelOverrides() {
     else {
         Engine::SetLabelOverride(L"MouseSensitive.Caption", L"Controller_Settings", L"Mouse Sensitivity - set with sens <value> in console");
     }
+
+    if (IsScct1_2()) {
+        Engine::SetLabelOverride(L"NoGoodVersion", L"LAN_Seek_Games_List", L"Cannot join: Requires SCCT Versus Enhanced");
+    }
+    else if (IsScctEnhanced3_4_Plus()) {
+        Engine::SetLabelOverride(L"NoGoodVersion", L"LAN_Seek_Games_List", L"Cannot join: Requires stock SCCT Versus");
+    }
+    else {
+        Engine::SetLabelOverride(L"NoGoodVersion", L"LAN_Seek_Games_List", L"Cannot join: Using newer Versus Enhanced");
+    }
 }
 
 void PrintTextEntry(wchar_t* _eax, wchar_t* _edi, wchar_t* _ebp, wchar_t* result) {
     if (result != nullptr) {
-        std::wcout << std::format(L"eax:{} edi:{} ebp:{} result: {}", _eax, _edi, _ebp, result) << std::endl;
+        std::wcout << std::format(L"languageName:{} controlName:{} menuName:{} current: {}", _eax, _edi, _ebp, result) << std::endl;
     }
 }
 
@@ -828,8 +868,74 @@ __declspec(naked) void WaistLedge() {
     }
 }
 
+static int ServerInfoVEntry = 0x10AB4015;
+__declspec(naked) void ServerInfoV() {
+    static int version;
+    _asm {
+        pushad
+    }
+    version = ScctVersion();
+    static int Return = 0x10AB4020;
+    __asm {
+        popad
+        mov eax, dword ptr[version]
+        mov dword ptr[esp + 0xDC], eax
+        jmp dword ptr[Return]
+    }
+}
+
+static int ServerBrowserVEntry = 0x10AB35E7;
+__declspec(naked) void ServerBrowserV() {
+    static int version;
+    _asm {
+        pushad
+    }
+    version = ScctVersion();
+    static int Return = 0x10AB35ED;
+    __asm {
+        popad
+        cmp     esi, dword ptr[version]
+        jmp dword ptr[Return]
+    }
+}
+
+static const wchar_t* KnownEnhancedMap = L"AquaD";
+static const wchar_t* KnownDefaultMap = L"AQU03";
+const wchar_t* VerifyMapName(const wchar_t* mapName, int version) {
+    if (ScctVersion() == version) {
+        return mapName;
+    }
+    else if (IsScct1_2()) {
+        return KnownDefaultMap;
+    }
+    return KnownEnhancedMap;
+}
+
+static int DisableMissingMapVersionErrorEntry = 0x10AB3B9F;
+__declspec(naked) void DisableMissingMapVersionError() {
+    static int Return = 0x10AB3BA7;
+    static const wchar_t* MapName;
+    static int Version;
+    __asm {
+        lea     ecx, [ebx + 0x38]
+        mov dword ptr[MapName], ecx
+        mov     ecx, [ebx + 0x0A8]
+        mov dword ptr[Version], ecx
+        pushad
+    }
+    MapName = VerifyMapName(MapName, Version);
+    __asm {
+        popad
+        mov ecx, dword ptr[MapName]
+        push    ecx
+        lea     eax, [edi + edx + 0x14]
+        jmp dword ptr[Return]
+    }
+}
+
 void Engine::Initialize()
 {
+    SetGameVersionIdentifier();
     InitLabelOverrides();
 
     MemoryWriter::WriteJump(InstaFixEntry, InstaFix);
@@ -850,6 +956,10 @@ void Engine::Initialize()
     MemoryWriter::WriteJump(ScreenShake2Entry, ScreenShake2);
 
     MemoryWriter::WriteJump(WaistLedgeEntry, WaistLedge);
+
+    MemoryWriter::WriteJump(ServerInfoVEntry, ServerInfoV);
+    MemoryWriter::WriteJump(ServerBrowserVEntry, ServerBrowserV);
+    MemoryWriter::WriteJump(DisableMissingMapVersionErrorEntry, DisableMissingMapVersionError);
 
     if (Config::sticky_camera_fix) {
         MemoryWriter::WriteJump(StickyCamContextMenuBlockEntry, StickyCamContextMenuBlock);
