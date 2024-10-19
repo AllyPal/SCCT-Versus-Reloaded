@@ -577,13 +577,13 @@ static void InitLabelOverrides() {
     }
 
     if (IsScct1_2()) {
-        Engine::SetLabelOverride(L"NoGoodVersion", L"LAN_Seek_Games_List", L"Cannot join: Requires SCCT Versus Enhanced");
+        Engine::SetLabelOverride(L"NoGoodVersion", L"LAN_Seek_Games_List", L"Cannot join: Requires Enhanced SCCT Versus");
     }
     else if (IsScctEnhanced3_4_Plus()) {
-        Engine::SetLabelOverride(L"NoGoodVersion", L"LAN_Seek_Games_List", L"Cannot join: Requires stock SCCT Versus");
+        Engine::SetLabelOverride(L"NoGoodVersion", L"LAN_Seek_Games_List", L"Cannot join: Requires Stock SCCT Versus");
     }
     else {
-        Engine::SetLabelOverride(L"NoGoodVersion", L"LAN_Seek_Games_List", L"Cannot join: Using newer Versus Enhanced");
+        Engine::SetLabelOverride(L"NoGoodVersion", L"LAN_Seek_Games_List", L"Cannot join: Using Newer Versus Enhanced");
     }
 }
 
