@@ -7,6 +7,8 @@
 #ifndef PCH_H
 #define PCH_H
 constexpr auto NOP = 0x90;
+constexpr auto default_scct_version = 0xA7;
+constexpr auto enhanced_scct_version = 0xC8;
 constexpr auto consoleKeyBind = 0x29;
 constexpr int fps_host_min = 30;
 constexpr int fps_host_max = 165;

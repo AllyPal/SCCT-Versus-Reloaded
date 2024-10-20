@@ -134,8 +134,8 @@ std::map<std::wstring, CommandHandler> getCommandHandlers() {
         [](const std::wstring& arg) {
         if (!arg.empty()) {
             auto frameLimit = std::stoi(arg);
-            if (frameLimit < 90) {
-                frameLimit = 90;
+            if (frameLimit < 95) {
+                frameLimit = 95;
                 GameConsole::WriteGameConsole(std::format(L" > minimum setting is {}", 95));
             }
             else if (frameLimit > 112) {

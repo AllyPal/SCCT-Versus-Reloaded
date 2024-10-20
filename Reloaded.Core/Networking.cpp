@@ -176,8 +176,17 @@ __declspec(naked) void sendBroadcastLanMessage() {
     }
 }
 
-int ServerInfoBroadcastEntry = 0x10AB3E35;
-__declspec(naked) void ServerInfoBroadcast() {
+int ServerListHostshortFixEntry = 0x10A7FD70;
+__declspec(naked) void ServerListHostshortFix() {
+    static int Return = 0x10A7FD77;
+    __asm {
+        mov ax, [esp+0x20]
+        jmp dword ptr[Return]
+    }
+}
+
+int ServerListHostlongFixEntry = 0x10AB3E35;
+__declspec(naked) void ServerListHostlongFix() {
     //if (!Engine::configRef.useDirectConnect) {
         /*__asm {
             mov[esp + 0x20], ecx
@@ -410,7 +419,8 @@ void CacheMasterServerIpStartup() {
 void Networking::Initialize()
 {
     MemoryWriter::WriteJump(sendBroadcastLanMessageEntry, sendBroadcastLanMessage);
-    MemoryWriter::WriteJump(ServerInfoBroadcastEntry, ServerInfoBroadcast);
+    MemoryWriter::WriteJump(ServerListHostlongFixEntry, ServerListHostlongFix);
+    MemoryWriter::WriteJump(ServerListHostshortFixEntry, ServerListHostshortFix);
     MemoryWriter::WriteJump(InterceptMasterServerPacketEntry, InterceptMasterServerPacket);
     MemoryWriter::WriteFunctionPtr(RunOncePerServerLanFrameEntry, RunOncePerServerLanFrame);
     std::thread cacheThread(CacheMasterServerIpStartup);
