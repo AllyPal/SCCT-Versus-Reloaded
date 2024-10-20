@@ -556,6 +556,7 @@ void Engine::SetLabelOverride(const wchar_t* element, const wchar_t* page, std::
 }
 
 static void InitLabelOverrides() {
+    Engine::SetLabelOverride(L"TitlePage", L"LAN_Seek_Games_List", L"Reloaded Server List");
     Engine::SetLabelOverride(L"TitlePage", L"LAN_Menu", L"Reloaded Session");
     Engine::SetLabelOverride(L"TitrePage.Caption", L"LAN_Menu", L"Reloaded Session");
     Engine::SetLabelOverride(L"MainPage_Live.Caption", L"Menu_Multi", L" ");
