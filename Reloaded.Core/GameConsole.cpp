@@ -330,7 +330,7 @@ void OnCbCreated() {
     static bool firstRun = true;
     if (firstRun) {
         firstRun = false;
-        GameConsole::WriteChatBox(L"Reloaded v1.0.");
+        GameConsole::WriteChatBox(L"Reloaded v1.0");
     }
 }
 

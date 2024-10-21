@@ -26,6 +26,26 @@ struct UcStringArray
     }
 };
 
+struct UBase {
+    std::byte unspecified[0x1000];
+
+    uint32_t& NameId() {
+        return *reinterpret_cast<uint32_t*>(unspecified + (0x20));
+    }
+
+    wchar_t* Name() {
+        auto basePtr = *reinterpret_cast<int**>(0x10CC9E5C);
+        auto elementPtr = reinterpret_cast<int*>(basePtr[NameId()]);
+        auto stringPtr = reinterpret_cast<wchar_t*>(reinterpret_cast<int>(elementPtr) + 0xC);
+
+        return stringPtr;
+    }
+
+    UBase* Parent() {
+        return *reinterpret_cast<UBase**>(unspecified + (0x24));
+    }
+};
+
 struct SLnSrvLnk {
     std::byte unspecified[0x1000];
 
@@ -164,9 +184,7 @@ struct CompCol {
     }
 };
 
-struct GUIPage {
-    std::byte unspecified[0x1000];
-
+struct GUIPage : UBase {
     wchar_t* Title() {
         return *reinterpret_cast<wchar_t**>(unspecified + (0x280));
     }

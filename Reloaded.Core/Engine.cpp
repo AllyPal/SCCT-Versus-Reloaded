@@ -149,17 +149,17 @@ void onPageUpdate(GUIPage* page)
 {
     static GUIPage* lastPage;
     if (page != lastPage && page->Title() != nullptr) {
-        if (wcscmp(page->Title(), L"Game Options") == 0) {
+        auto pageName = page->Parent()->Name();
+        if (wcscmp(pageName, L"Controller_Settings") == 0) {
             page->Components()->GetControl(3)->Components()->GetControl(2)->flags() &= ~8;
         }
-        else if (wcscmp(page->Title(), L"Video Options") == 0) {
+        else if (wcscmp(pageName, L"Video_Settings") == 0) {
             // Restore original pointer when we're done so it's freed
             page->sResArray().sRes() = sResOriginal;
             page->sResArray().sResCount() = sResCountOriginal;
             page->sResArray().sResCount2() = sResCount2Original;
         }
-        else if (wcscmp(page->Title(), L"Enhanced Versus") == 0 || wcscmp(page->Title(), L"Multiplayer") == 0) {
-            std::cout << page << std::endl;
+        else if (wcscmp(pageName, L"Menu_Multi") == 0) {
             page->Components()->GetControl(2)->flags() = 0;
         }
     }
@@ -463,19 +463,10 @@ bool ValidateState(int newState, PlC* plc) {
 }
 
 wchar_t* StateName(int id) {
-    static wchar_t* stringPtr;
-    __asm {
-        push eax
-        push ebx
-        mov     eax, dword ptr[id]
-        mov     ebx, dword ptr[0x10CC9E5C];
-        mov     ebx, [ebx]
-        mov     eax, [ebx + eax * 0x4]
-        add     eax, 0xC
-        mov     dword ptr[stringPtr], eax
-        pop ebx
-        pop eax
-    }
+    auto basePtr = *reinterpret_cast<int**>(0x10CC9E5C);
+    auto elementPtr = reinterpret_cast<int*>(basePtr[id]);
+    auto stringPtr = reinterpret_cast<wchar_t*>(reinterpret_cast<int>(elementPtr) + 0xC);
+
     return stringPtr;
 }
 
