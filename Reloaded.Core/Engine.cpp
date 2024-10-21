@@ -145,9 +145,9 @@ static uint32_t sResOriginal;
 static uint32_t sResCountOriginal;
 static uint32_t sResCount2Original;
 
-void onPageUpdate(GUIPageWaitLaunch* page)
+void onPageUpdate(GUIPage* page)
 {
-    static GUIPageWaitLaunch* lastPage;
+    static GUIPage* lastPage;
     if (page != lastPage && page->Title() != nullptr) {
         if (wcscmp(page->Title(), L"Game Options") == 0) {
             page->Components()->GetControl(3)->Components()->GetControl(2)->flags() &= ~8;
@@ -158,13 +158,18 @@ void onPageUpdate(GUIPageWaitLaunch* page)
             page->sResArray().sResCount() = sResCountOriginal;
             page->sResArray().sResCount2() = sResCount2Original;
         }
+        else if (wcscmp(page->Title(), L"Enhanced Versus") == 0 || wcscmp(page->Title(), L"Multiplayer") == 0) {
+            std::cout << page << std::endl;
+            page->Components()->GetControl(2)->flags() = 0;
+        }
     }
     lastPage = page;
 }
 
 int GuiPageWaitUpdateEntry = 0x10C02C58;
+int GuiPageWaitUpdateEntry2 = 0x10C02D08;
 __declspec(naked) void GuiPageWaitUpdate() {
-    static GUIPageWaitLaunch* page;
+    static GUIPage* page;
     __asm {
         pushad
         mov [page], ecx
@@ -208,9 +213,9 @@ __declspec(naked) void SPlaProCreated() {
     }
 }
 
-void onPageLoad(GUIPageWaitLaunch* page)
+void onPageLoad(GUIPage* page)
 {
-    static GUIPageWaitLaunch* lastPage;
+    static GUIPage* lastPage;
     if (page != lastPage && page->Title() != nullptr && wcscmp(page->Title(), L"Video Options") == 0) {
         sResOriginal = page->sResArray().sRes();
         sResCountOriginal = page->sResArray().sResCount();
@@ -225,7 +230,7 @@ void onPageLoad(GUIPageWaitLaunch* page)
 
 int GuiPageWaitLoadEntry = 0x10A66746;
 __declspec(naked) void GuiPageWaitLoad() {
-    static GUIPageWaitLaunch* page;
+    static GUIPage* page;
     __asm {
         je skip
         mov dword ptr[eax], 0x10C02C40
@@ -559,7 +564,7 @@ static void InitLabelOverrides() {
     Engine::SetLabelOverride(L"TitlePage", L"LAN_Seek_Games_List", L"Reloaded Server List");
     Engine::SetLabelOverride(L"TitlePage", L"LAN_Menu", L"Reloaded Session");
     Engine::SetLabelOverride(L"TitrePage.Caption", L"LAN_Menu", L"Reloaded Session");
-    Engine::SetLabelOverride(L"MainPage_Live.Caption", L"Menu_Multi", L" ");
+    Engine::SetLabelOverride(L"TitlePage", L"Lobby_Create", L"Reloaded Lobby");
     Engine::SetLabelOverride(L"MainPage_LAN.Caption", L"Menu_Multi", L"Play Multiplayer");
 
     HKL layout = GetKeyboardLayout(0);
@@ -588,10 +593,14 @@ static void InitLabelOverrides() {
     }
 }
 
-void PrintTextEntry(wchar_t* _eax, wchar_t* _edi, wchar_t* _ebp, wchar_t* result) {
-    if (result != nullptr) {
-        std::wcout << std::format(L"languageName:{} controlName:{} menuName:{} current: {}", _eax, _edi, _ebp, result) << std::endl;
+void PrintTextEntry(wchar_t* languageName, wchar_t* controlName, wchar_t* menuName, wchar_t* current) {
+    
+    const wchar_t* setting = current;
+    if (setting == nullptr) {
+        setting = L" ";
     }
+    
+    std::wcout << std::format(L"Engine::SetLabelOverride(L\"{}\", L\"{}\", L\"{}\");", controlName, menuName, setting) << std::endl;
 }
 
 wchar_t* OverrideLabel(wchar_t* languageName, wchar_t* controlName, wchar_t* menuName, wchar_t* current) {
@@ -949,6 +958,7 @@ void Engine::Initialize()
     MemoryWriter::WriteJump(LoadTextEntry, LoadText);
 
     MemoryWriter::WriteFunctionPtr(GuiPageWaitUpdateEntry, GuiPageWaitUpdate);
+    MemoryWriter::WriteFunctionPtr(GuiPageWaitUpdateEntry2, GuiPageWaitUpdate);
     MemoryWriter::WriteJump(GuiPageWaitLoadEntry, GuiPageWaitLoad);
     MemoryWriter::WriteJump(SPlaProCreatedEntry, SPlaProCreated);
     MemoryWriter::WriteJump(PitchYawInputEntry, PitchYawInput);

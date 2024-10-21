@@ -164,7 +164,7 @@ struct CompCol {
     }
 };
 
-struct GUIPageWaitLaunch {
+struct GUIPage {
     std::byte unspecified[0x1000];
 
     wchar_t* Title() {
