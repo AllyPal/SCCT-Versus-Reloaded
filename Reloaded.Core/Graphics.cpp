@@ -514,7 +514,26 @@ HRESULT CreateDeviceOverride(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWin
     }
     else {
         HRESULT result = D3DERR_NOTFOUND;
-        HRESULT testCooperativeLevel = pDevice->TestCooperativeLevel();
+
+        HRESULT testCooperativeLevel;
+        int maxAttempts = 100;
+
+        for (int i = 0; i < maxAttempts; ++i) {
+            testCooperativeLevel = pDevice->TestCooperativeLevel();
+
+            if (testCooperativeLevel != D3DERR_DEVICELOST) {
+                Logger::log("Device cooperative level is OK or reset required.");
+                break;
+            }
+
+            Logger::log("Device is lost, retrying...");
+            Sleep(50); 
+        }
+
+        if (testCooperativeLevel == D3DERR_DEVICELOST) {
+            Logger::log("Device is still lost after 5 seconds.");
+        }
+
         Logger::log(std::format("Cooperation level {:#x}", testCooperativeLevel));
         switch (testCooperativeLevel) {
         case D3DERR_DEVICELOST:
