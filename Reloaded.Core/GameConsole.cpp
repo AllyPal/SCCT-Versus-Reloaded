@@ -339,11 +339,11 @@ __declspec(naked) void CbCreated() {
     __asm {
         mov     dword ptr[eax], 0x10C02800
         mov     dword ptr[cb], eax
-        pushad
-    }
-    OnCbCreated();
-    __asm {
-        popad
+    //    pushad
+    //}
+    //OnCbCreated();
+    //__asm {
+    //    popad
         ret
     }
 }
