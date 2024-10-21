@@ -14,6 +14,7 @@
 #include "Config.h"
 #include "Graphics.h"
 #include "Engine.h"
+#include "GameConsole.h"
 
 static std::pair<uint32_t, uint16_t> GetCachedDnsIp(const std::string& dnsName);
 static void CacheDnsIp(const std::string& dnsName);
@@ -99,7 +100,12 @@ int sendMessage(SOCKET _socket, u_short hostshort, u_long hostlong, uintptr_t me
     std::vector<std::string> combinedServerList;
 
     static auto masterIpPort = GetOrCacheDnsIpThreaded(Config::master_server_dns);
-    if (masterIpPort.first != 0 && masterIpPort.second != 0 && nextServerListUpdateTime < Graphics::lastFrameTime) {
+    if (!masterIpPort.first != 0 && masterIpPort.second != 0 && nextServerListUpdateTime < Graphics::lastFrameTime) {
+        static bool firstAnnounce = true;
+        if (firstAnnounce) {
+            firstAnnounce = false;
+            GameConsole::WriteChatBox(L"Server: Registering server with Reloaded master server.");
+        }
         nextServerListUpdateTime = Graphics::lastFrameTime + std::chrono::seconds(4);
         // very hacky swapping of ip representation - done for speed
         uint32_t reversedIp = ntohl(masterIpPort.first);
@@ -360,7 +366,8 @@ static std::chrono::steady_clock::time_point nextNetUpdateTime;
 static void LongIntervalNetcode() {
     if (nextNetUpdateTime < Graphics::lastFrameTime) {
         static auto masterIpPort = GetOrCacheDnsIpThreaded(Config::master_server_dns);
-        if (masterIpPort.first != 0 && masterIpPort.second != 0) {            
+        GameConsole::WriteChatBox(L"System: Attempting to resolve Reloaded master server.");
+        if (masterIpPort.first != 0 && masterIpPort.second != 0) {     
             SOCKET socket = Engine::gameState.lvIn->sGaIn()->IamLANServer()->Socket();
 
             const wchar_t* message = L"SCLIREGI";
@@ -379,7 +386,12 @@ static void LongIntervalNetcode() {
                 std::cerr << "sendto failed with error: " << WSAGetLastError() << std::endl;
             }
             else {
-                std::cout << "Packet sent successfully!" << std::endl;
+                debug_wcout << "Packet sent successfully!" << std::endl;
+                static bool firstRun = true;
+                if (firstRun) {
+                    firstRun = false;
+                    GameConsole::WriteChatBox(L"System: Registered with Reloaded master server.");
+                }
             }
         }
 

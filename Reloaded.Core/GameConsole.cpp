@@ -15,6 +15,7 @@
 #include "GameStructs.h"
 #include "Fonts.h"
 #include "Debug.h"
+#include "Engine.h"
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "winmm.lib")
 
@@ -311,8 +312,55 @@ __declspec(naked) void ConsoleInput() {
     }
 }
 
+static GUICb* cb;
+
+void GameConsole::WriteChatBox(std::wstring displayText) {
+    if (cb == nullptr) {
+        debug_cerr << "cb not created." << std::endl;
+        return;
+    }
+    cb->Input().text = new wchar_t[displayText.size() + 1];
+    std::copy(displayText.begin(), displayText.end(), cb->Input().text);
+    cb->Input().text[displayText.size()] = L'\0';
+    cb->Input().length = static_cast<int>(displayText.size() + 1);
+    cb->Input().alsoLength = static_cast<int>(displayText.size() + 1);
+}
+
+void OnCbCreated() {
+    static bool firstRun = true;
+    if (firstRun) {
+        firstRun = false;
+        GameConsole::WriteChatBox(L"Reloaded v1.0.");
+    }
+}
+
+static int CbCreatedEntry = 0x10A66D88;
+__declspec(naked) void CbCreated() {
+    __asm {
+        mov     dword ptr[eax], 0x10C02800
+        mov     dword ptr[cb], eax
+        pushad
+    }
+    OnCbCreated();
+    __asm {
+        popad
+        ret
+    }
+}
+
+static int CbDestroyedEntry = 0x10C0280C;
+__declspec(naked) void CbDestroyed() {
+    static int Return = 0x10A66D90;
+    __asm {
+        mov dword ptr[cb], 0
+        jmp dword ptr[Return]
+    }
+}
+
 void GameConsole::Initialize()
 {
+    MemoryWriter::WriteJump(CbCreatedEntry, CbCreated);
+    MemoryWriter::WriteFunctionPtr(CbDestroyedEntry, CbDestroyed);
     MemoryWriter::WriteJump(ConsoleInputEntry, ConsoleInput);
     MemoryWriter::WriteJump(setThisConsoleEntry, setThisConsole);
     MemoryWriter::WriteJump(ConsoleCreatedEntry, ConsoleCreated);

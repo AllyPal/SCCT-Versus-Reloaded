@@ -187,3 +187,11 @@ struct SPlaPro {
         return *reinterpret_cast<UcStringArray*>(unspecified + (0xD8));
     }
 };
+
+struct GUICb {
+    std::byte unspecified[0x1000];
+
+    UcString& Input() {
+        return *reinterpret_cast<UcString*>(unspecified + (0x1E4));
+    }
+};
