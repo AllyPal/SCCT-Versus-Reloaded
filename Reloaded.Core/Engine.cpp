@@ -216,14 +216,16 @@ __declspec(naked) void SPlaProCreated() {
 void onPageLoad(GUIPage* page)
 {
     static GUIPage* lastPage;
-    if (page != lastPage && page->Title() != nullptr && wcscmp(page->Title(), L"Video Options") == 0) {
-        sResOriginal = page->sResArray().sRes();
-        sResCountOriginal = page->sResArray().sResCount();
-        sResCount2Original = page->sResArray().sResCount2();
+    if (page != lastPage && page->Title() != nullptr) {
+        if (wcscmp(page->Parent()->Name(), L"Video_Settings") == 0) {
+            sResOriginal = page->sResArray().sRes();
+            sResCountOriginal = page->sResArray().sResCount();
+            sResCount2Original = page->sResArray().sResCount2();
 
-        page->sResArray().sRes() = reinterpret_cast<uintptr_t>(Graphics::videoSettingsDisplayModes);
-        page->sResArray().sResCount() = Graphics::GetResolutionCount();
-        page->sResArray().sResCount2() = Graphics::GetResolutionCount();
+            page->sResArray().sRes() = reinterpret_cast<uintptr_t>(Graphics::videoSettingsDisplayModes);
+            page->sResArray().sResCount() = Graphics::GetResolutionCount();
+            page->sResArray().sResCount2() = Graphics::GetResolutionCount();
+        }
     }
     lastPage = page;
 }

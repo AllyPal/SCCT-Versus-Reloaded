@@ -265,7 +265,6 @@ void ProcessD3DPresentParameters(D3DPRESENT_PARAMETERS* d3dpp) {
     Graphics::videoSettingsDisplayModes = VideoSettingsDisplayOutput();
     Graphics::videoSettingsDisplayModesCmd = VideoSettingsDisplayCmd();
 
-    //Engine::SetLabelOverride(L"sRes", L"Video_Settings", output);
     //if (caps->MaxAnisotropy != 0) {
     //    UINT qualityLevels;
 
