@@ -55,7 +55,7 @@ static bool IsScctEnhanced3_4_Plus() {
     return identifier == '3';
 }
 
-static char ScctVersion() {
+static int ScctVersion() {
     if (IsScctEnhanced3_4_Plus()) {
         return enhanced_scct_version;
     }
