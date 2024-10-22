@@ -25,3 +25,5 @@ struct CommandHandler {
     std::function<void(const std::wstring&)> handler;
     std::wstring displayValue;
 };
+
+const std::wstring cb_prefix = L" > ";

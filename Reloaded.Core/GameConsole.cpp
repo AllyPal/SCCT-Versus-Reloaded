@@ -16,6 +16,7 @@
 #include "Fonts.h"
 #include "Debug.h"
 #include "Engine.h"
+#include <queue>
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "winmm.lib")
 
@@ -312,25 +313,23 @@ __declspec(naked) void ConsoleInput() {
     }
 }
 
-static GUICb* cb;
+static std::queue<std::wstring> messageQueue;
+
+void ClearMessageQueue()
+{
+    while (!messageQueue.empty()) {
+        messageQueue.pop();
+    }
+}
 
 void GameConsole::WriteChatBox(std::wstring displayText) {
-    if (cb == nullptr) {
-        debug_cerr << "cb not created." << std::endl;
-        return;
-    }
-    cb->Input().text = new wchar_t[displayText.size() + 1];
-    std::copy(displayText.begin(), displayText.end(), cb->Input().text);
-    cb->Input().text[displayText.size()] = L'\0';
-    cb->Input().length = static_cast<int>(displayText.size() + 1);
-    cb->Input().alsoLength = static_cast<int>(displayText.size() + 1);
+    messageQueue.push(cb_prefix + displayText);
 }
 
 void OnCbCreated() {
-    static bool firstRun = true;
-    if (firstRun) {
-        firstRun = false;
-        GameConsole::WriteChatBox(L"Reloaded v1.0");
+    ClearMessageQueue();
+    if (Engine::IsListenServer()) {
+        GameConsole::WriteChatBox(L"Starting Reloaded v1.0 lobby");
     }
 }
 
@@ -338,21 +337,40 @@ static int CbCreatedEntry = 0x10A66D88;
 __declspec(naked) void CbCreated() {
     __asm {
         mov     dword ptr[eax], 0x10C02800
-        mov     dword ptr[cb], eax
-    //    pushad
-    //}
-    //OnCbCreated();
-    //__asm {
-    //    popad
+        pushad
+    }
+    OnCbCreated();
+    __asm {
+        popad
         ret
     }
 }
 
-static int CbDestroyedEntry = 0x10C0280C;
-__declspec(naked) void CbDestroyed() {
-    static int Return = 0x10A66D90;
+static void OnCbUpdated(GUICb* cb) {
+    if (messageQueue.empty() || cb->Input().text != nullptr) {
+        return;
+    }
+
+    auto& displayText = messageQueue.front();
+    cb->Input().text = new wchar_t[displayText.size() + 1];
+    std::copy(displayText.begin(), displayText.end(), cb->Input().text);
+    cb->Input().text[displayText.size()] = L'\0';
+    cb->Input().length = static_cast<int>(displayText.size() + 1);
+    cb->Input().alsoLength = static_cast<int>(displayText.size() + 1);
+    messageQueue.pop();
+}
+
+static int CbUpdatedEntry = 0x10C02858;
+__declspec(naked) void CbUpdated() {
+    static GUICb* cb;
     __asm {
-        mov dword ptr[cb], 0
+        mov dword ptr[cb], ecx
+        pushad
+    }
+    OnCbUpdated(cb);
+    static int Return = 0x10A61B20;
+    __asm {
+        popad
         jmp dword ptr[Return]
     }
 }
@@ -360,7 +378,7 @@ __declspec(naked) void CbDestroyed() {
 void GameConsole::Initialize()
 {
     MemoryWriter::WriteJump(CbCreatedEntry, CbCreated);
-    MemoryWriter::WriteFunctionPtr(CbDestroyedEntry, CbDestroyed);
+    MemoryWriter::WriteFunctionPtr(CbUpdatedEntry, CbUpdated);
     MemoryWriter::WriteJump(ConsoleInputEntry, ConsoleInput);
     MemoryWriter::WriteJump(setThisConsoleEntry, setThisConsole);
     MemoryWriter::WriteJump(ConsoleCreatedEntry, ConsoleCreated);

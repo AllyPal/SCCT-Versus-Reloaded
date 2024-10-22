@@ -101,11 +101,6 @@ int sendMessage(SOCKET _socket, u_short hostshort, u_long hostlong, uintptr_t me
 
     static auto masterIpPort = GetOrCacheDnsIpThreaded(Config::master_server_dns);
     if (!masterIpPort.first != 0 && masterIpPort.second != 0 && nextServerListUpdateTime < Graphics::lastFrameTime) {
-        static bool firstAnnounce = true;
-        if (firstAnnounce) {
-            firstAnnounce = false;
-            GameConsole::WriteChatBox(L"Server: Registering server with Reloaded master server.");
-        }
         nextServerListUpdateTime = Graphics::lastFrameTime + std::chrono::seconds(4);
         // very hacky swapping of ip representation - done for speed
         uint32_t reversedIp = ntohl(masterIpPort.first);
@@ -113,10 +108,10 @@ int sendMessage(SOCKET _socket, u_short hostshort, u_long hostlong, uintptr_t me
         auto masterServerIpString = convertToIpPortString(&reversedIp, &reversedPort);
         combinedServerList.push_back(masterServerIpString);
 
-        std::cout << "Requesting server list" << std::endl;
+        debug_cout << "Requesting server list" << std::endl;
     }
     else {
-        std::cout << "Not requesting server list" << std::endl;
+        debug_cout << "Not requesting server list" << std::endl;
     }
 
     combinedServerList.insert(combinedServerList.end(), ipPortList.begin(), ipPortList.end());
@@ -216,7 +211,7 @@ static std::pair<uint32_t, uint16_t> GetCachedDnsIp(const std::string& dnsName) 
 }
 
 static void CacheDnsIp(const std::string& dnsName) {
-    std::cout << "Caching dns: " << dnsName << std::endl;
+    debug_cout << "Caching dns: " << dnsName << std::endl;
     size_t colonPos = dnsName.find(':');
 
     if (colonPos == std::string::npos) {
@@ -241,7 +236,6 @@ static void CacheDnsIp(const std::string& dnsName) {
     char ipStr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(ipv4->sin_addr), ipStr, sizeof ipStr);
 
-    // Replace inet_addr with inet_pton
     uint32_t ipAddr;
     if (inet_pton(AF_INET, ipStr, &ipAddr) != 1) {
         freeaddrinfo(res);
@@ -250,7 +244,7 @@ static void CacheDnsIp(const std::string& dnsName) {
     freeaddrinfo(res);
 
     dnsCache[dnsName] = { ntohl(ipAddr), port };
-    std::cout << "IP cached fo " << dnsName << std::endl;
+    debug_cout << "IP cached for " << dnsName << std::endl;
 }
 
 std::string convertToIpPortString(const uint32_t* ip, const uint16_t* port) {
@@ -273,15 +267,15 @@ std::string convertToIpPortString(const uint32_t* ip, const uint16_t* port) {
 
 void handleListPacket(std::wstring packetId, uint8_t* buffer, uint32_t recvBytes) {
     const size_t ipPortSize = 6;
-    std::cout << "Server list packet: " << StringOperations::wStringToString(packetId) << std::endl;
+    debug_cout << "Server list packet: " << StringOperations::wStringToString(packetId) << std::endl;
     const int ipDataOffset = 24;
     if (ipDataOffset >= recvBytes) {
-        std::cout << "Server list is empty" << std::endl;
+        debug_cout << "Server list is empty" << std::endl;
         return;
     }
 
     if ((recvBytes - ipDataOffset) % ipPortSize != 0) {
-        std::cout << "Invalid payload" << std::endl;
+        debug_cout << "Invalid payload" << std::endl;
         return;
     }
 
@@ -294,14 +288,14 @@ void handleListPacket(std::wstring packetId, uint8_t* buffer, uint32_t recvBytes
 
         // Convert IP and port to "IP:PORT" string
         std::string ipPortStr = convertToIpPortString(ip, port);
-        std::cout << ipPortStr << std::endl;
+        debug_cout << ipPortStr << std::endl;
         // Add the string to the vector
         ipPortList.push_back(ipPortStr);
 }
 }
 
 void handleOther(std::wstring packetId, uint8_t* buffer) {
-    std::cout << "Unknown master server packet: " << StringOperations::wStringToString(packetId) << std::endl;
+    debug_cout << "Unknown master server packet: " << StringOperations::wStringToString(packetId) << std::endl;
 }
 
 void handlePacket(uint32_t clientIP, uint16_t clientPort, uint32_t recvBytes, uint8_t* buffer) {
@@ -362,12 +356,18 @@ __declspec(naked) void InterceptMasterServerPacket() {
     }
 }
 
+static bool announceSuccessfulRegistration = true;
 static std::chrono::steady_clock::time_point nextNetUpdateTime;
 static void LongIntervalNetcode() {
+    const int retryIntervalLong = 60;
+    const int retryIntervalShort = 15;
     if (nextNetUpdateTime < Graphics::lastFrameTime) {
-        static auto masterIpPort = GetOrCacheDnsIpThreaded(Config::master_server_dns);
-        GameConsole::WriteChatBox(L"System: Attempting to resolve Reloaded master server.");
-        if (masterIpPort.first != 0 && masterIpPort.second != 0) {     
+        auto masterIpPort = GetOrCacheDnsIpThreaded(Config::master_server_dns);
+        if (masterIpPort.first == 0 && masterIpPort.second == 0) {
+            GameConsole::WriteChatBox(L"Resolving master server IP address.");
+            nextNetUpdateTime = Graphics::lastFrameTime + std::chrono::seconds(retryIntervalShort);
+        }
+        else {     
             SOCKET socket = Engine::gameState.lvIn->sGaIn()->IamLANServer()->Socket();
 
             const wchar_t* message = L"SCLIREGI";
@@ -379,23 +379,26 @@ static void LongIntervalNetcode() {
             char ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &(serverAddr.sin_addr), ip, INET_ADDRSTRLEN);
             uint16_t port = ntohs(serverAddr.sin_port);
-            std::cout << "Sending master server packet to " << ip << ":" << port << std::endl;
+            debug_cout << "Sending master server packet to " << ip << ":" << port << std::endl;
 
             int result = sendto(socket, (const char*)message, wcslen(message) * sizeof(wchar_t), 0, (sockaddr*)&serverAddr, sizeof(serverAddr));
             if (result == SOCKET_ERROR) {
-                std::cerr << "sendto failed with error: " << WSAGetLastError() << std::endl;
+                debug_cerr << "sendto failed with error: " << WSAGetLastError() << std::endl;
+                GameConsole::WriteChatBox(L"Error communicating with master server.");
+                announceSuccessfulRegistration = true;
+
+                nextNetUpdateTime = Graphics::lastFrameTime + std::chrono::seconds(retryIntervalShort);
             }
             else {
                 debug_wcout << "Packet sent successfully!" << std::endl;
-                static bool firstRun = true;
-                if (firstRun) {
-                    firstRun = false;
-                    GameConsole::WriteChatBox(L"System: Registered with Reloaded master server.");
+                if (announceSuccessfulRegistration) {
+                    announceSuccessfulRegistration = false;
+                    GameConsole::WriteChatBox(L"Registering with master server.");
                 }
+
+                nextNetUpdateTime = Graphics::lastFrameTime + std::chrono::seconds(retryIntervalLong);
             }
         }
-
-        nextNetUpdateTime = Graphics::lastFrameTime + std::chrono::seconds(60);
     }
 }
 
@@ -417,11 +420,11 @@ __declspec(naked) void RunOncePerServerLanFrame() {
 }
 
 void CacheMasterServerIpStartup() {
-    std::cout << "Caching master server ip" << std::endl;
+    debug_cout << "Caching master server ip" << std::endl;
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (result != 0) {
-        std::cerr << "WSAStartup failed: " << result << std::endl;
+        debug_cerr << "WSAStartup failed: " << result << std::endl;
         return; 
     }
     CacheDnsIp(Config::master_server_dns);
