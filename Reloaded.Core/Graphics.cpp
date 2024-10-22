@@ -55,19 +55,18 @@ int GetMaxRefreshRate(UINT displayWidth, UINT displayHeight) {
 }
 
 void PrintParams(D3DPRESENT_PARAMETERS* d3dpp) {
-    std::cout << "BackBufferWidth: " << d3dpp->BackBufferWidth << std::endl;
-    std::cout << "BackBufferHeight: " << d3dpp->BackBufferHeight << std::endl;
-    std::cout << "BackBufferFormat: " << d3dpp->BackBufferFormat << std::endl;
-    std::cout << "BackBufferCount: " << d3dpp->BackBufferCount << std::endl;
-    std::cout << "MultiSampleType: " << d3dpp->MultiSampleType << std::endl;
-    std::cout << "SwapEffect: " << d3dpp->SwapEffect << std::endl;
-    std::cout << "hDeviceWindow: " << d3dpp->hDeviceWindow << std::endl;
-    std::cout << "Windowed: " << d3dpp->Windowed << std::endl;
-    std::cout << "EnableAutoDepthStencil: " << d3dpp->EnableAutoDepthStencil << std::endl;
-    std::cout << "AutoDepthStencilFormat: " << d3dpp->AutoDepthStencilFormat << std::endl;
-    std::cout << "Flags: " << d3dpp->Flags << std::endl;
-    std::cout << "FullScreen_RefreshRateInHz: " << d3dpp->FullScreen_RefreshRateInHz << std::endl;
-    std::cout << "FullScreen_PresentationInterval: " << d3dpp->FullScreen_PresentationInterval << std::endl;
+    Logger::log(std::format("BackBufferWidth: {}",  d3dpp->BackBufferWidth));
+    Logger::log(std::format("BackBufferHeight: {}",  d3dpp->BackBufferHeight));
+    Logger::log(std::format("BackBufferFormat: {:#x}", static_cast<int>(d3dpp->BackBufferFormat)));
+    Logger::log(std::format("BackBufferCount: {}",  d3dpp->BackBufferCount));
+    Logger::log(std::format("MultiSampleType: {:#x}", static_cast<int>(d3dpp->MultiSampleType)));
+    Logger::log(std::format("SwapEffect: {:#x}", static_cast<int>(d3dpp->SwapEffect)));
+    Logger::log(std::format("Windowed: {}",  d3dpp->Windowed));
+    Logger::log(std::format("EnableAutoDepthStencil: {}",  d3dpp->EnableAutoDepthStencil));
+    Logger::log(std::format("AutoDepthStencilFormat: {:#x}", static_cast<int>(d3dpp->AutoDepthStencilFormat)));
+    Logger::log(std::format("Flags: {:#x}",  d3dpp->Flags));
+    Logger::log(std::format("FullScreen_RefreshRateInHz: {}",  d3dpp->FullScreen_RefreshRateInHz));
+    Logger::log(std::format("FullScreen_PresentationInterval: {:#x}",  d3dpp->FullScreen_PresentationInterval));
 }
 
 std::string GetClosestAspectRatio(UINT width, UINT height) {
@@ -506,7 +505,8 @@ void OnDeviceCreated() {
 
 HRESULT CreateDeviceOverride(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface) {
     if (pDevice == nullptr) {
-        debug_cout << "CreateDevice" << std::endl;
+        Logger::log("d3d->CreateDevice:");
+        PrintParams(pPresentationParameters);
         auto result = d3d->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
         pDevice = *ppReturnedDeviceInterface;
         return result;
@@ -548,7 +548,8 @@ HRESULT CreateDeviceOverride(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWin
         case D3DERR_DEVICENOTRESET:
         {
             Logger::log("D3DERR_DEVICENOTRESET | D3D_OK");
-            Logger::log(std::format("W: {} H: {}", d3dppReplacement.BackBufferWidth, d3dppReplacement.BackBufferHeight));
+            Logger::log("pDevice->Reset:");
+            PrintParams(&d3dppReplacement);
             result = pDevice->Reset(&d3dppReplacement);
             if (!SUCCEEDED(result)) {
                 switch (result) {
