@@ -17,6 +17,7 @@
 #include "Debug.h"
 #include "Engine.h"
 #include <queue>
+#include "UnrealMemory.h"
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "winmm.lib")
 
@@ -351,10 +352,15 @@ static void OnCbUpdated(GUICb* cb) {
         return;
     }
 
-    auto& displayText = messageQueue.front();
-    cb->Input().text = new wchar_t[displayText.size() + 1];
-    std::copy(displayText.begin(), displayText.end(), cb->Input().text);
-    cb->Input().text[displayText.size()] = L'\0';
+    std::wstring displayText = messageQueue.front();
+
+    wchar_t* heapText = (wchar_t*)UnrealMemory::UMalloc((displayText.size() + 1) * sizeof(wchar_t));
+    if (heapText == nullptr) {
+        throw std::exception("Failed to allocate memory.");
+    }
+    std::copy(displayText.begin(), displayText.end(), heapText);
+    heapText[displayText.size()] = L'\0';
+    cb->Input().text = heapText;
     cb->Input().length = static_cast<int>(displayText.size() + 1);
     cb->Input().alsoLength = static_cast<int>(displayText.size() + 1);
     messageQueue.pop();
