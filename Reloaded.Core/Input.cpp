@@ -56,20 +56,20 @@ void HandleMouseInput(LPDIRECTINPUTDEVICE8 device, int dd) {
 
     if (FAILED(hr)) {
         if (hr == DIERR_INPUTLOST || hr == DIERR_NOTACQUIRED) {
-            debug_cerr << "Device lost or not acquired. Attempting to reacquire..." << std::endl;
+            Logger::log("DIMOUSE: Device lost or not acquired. Attempting to reacquire...");
             hr = device->Acquire();
             if (FAILED(hr)) {
-                debug_cerr << "Failed to acquire device." << std::endl;
+                Logger::log("DIMOUSE: Failed to acquire device.");
                 return;
             }
             if (SUCCEEDED(hr)) {
-                debug_cerr << "Acquired device." << std::endl;
+                Logger::log("DIMOUSE: Acquired device.");
             }
             hr = device->GetDeviceState(sizeof(DIMOUSESTATE), &mouseState);
         }
 
         if (FAILED(hr)) {
-            debug_cerr << "Failed to get device state. Error code: " << StringOperations::toHexString(hr) << std::endl;
+            Logger::log("DIMOUSE: Failed to get device state. Error code: " + StringOperations::toHexString(hr));
             return;
         }
     }
