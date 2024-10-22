@@ -185,7 +185,10 @@ __declspec(naked) void GuiPageWaitUpdate() {
 void HideConsoleWindow() {
 #ifndef _DEBUG
     HWND consoleWindow = GetConsoleWindow();
-    ShowWindow(consoleWindow, SW_HIDE);
+    FreeConsole();
+    if (consoleWindow != NULL) {
+        PostMessage(consoleWindow, WM_CLOSE, 0, 0);
+    }
 #endif
 }
 
