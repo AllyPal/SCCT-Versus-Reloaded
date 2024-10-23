@@ -26,6 +26,33 @@ static std::vector<DisplayModePair> displayModePairs;
 UcString* Graphics::videoSettingsDisplayModes;
 UcString* Graphics::videoSettingsDisplayModesCmd;
 
+std::wstring D3DErrorToString(HRESULT status) {
+    switch (status) {
+    case D3DERR_WRONGTEXTUREFORMAT: return L"D3DERR_WRONGTEXTUREFORMAT";
+    case D3DERR_UNSUPPORTEDCOLOROPERATION: return L"D3DERR_UNSUPPORTEDCOLOROPERATION";
+    case D3DERR_UNSUPPORTEDCOLORARG: return L"D3DERR_UNSUPPORTEDCOLORARG";
+    case D3DERR_UNSUPPORTEDALPHAOPERATION: return L"D3DERR_UNSUPPORTEDALPHAOPERATION";
+    case D3DERR_UNSUPPORTEDALPHAARG: return L"D3DERR_UNSUPPORTEDALPHAARG";
+    case D3DERR_TOOMANYOPERATIONS: return L"D3DERR_TOOMANYOPERATIONS";
+    case D3DERR_CONFLICTINGTEXTUREFILTER: return L"D3DERR_CONFLICTINGTEXTUREFILTER";
+    case D3DERR_UNSUPPORTEDFACTORVALUE: return L"D3DERR_UNSUPPORTEDFACTORVALUE";
+    case D3DERR_CONFLICTINGRENDERSTATE: return L"D3DERR_CONFLICTINGRENDERSTATE";
+    case D3DERR_UNSUPPORTEDTEXTUREFILTER: return L"D3DERR_UNSUPPORTEDTEXTUREFILTER";
+    case D3DERR_CONFLICTINGTEXTUREPALETTE: return L"D3DERR_CONFLICTINGTEXTUREPALETTE";
+    case D3DERR_DRIVERINTERNALERROR: return L"D3DERR_DRIVERINTERNALERROR";
+    case D3DERR_NOTFOUND: return L"D3DERR_NOTFOUND";
+    case D3DERR_MOREDATA: return L"D3DERR_MOREDATA";
+    case D3DERR_DEVICELOST: return L"D3DERR_DEVICELOST";
+    case D3DERR_DEVICENOTRESET: return L"D3DERR_DEVICENOTRESET";
+    case D3DERR_NOTAVAILABLE: return L"D3DERR_NOTAVAILABLE";
+    case D3DERR_OUTOFVIDEOMEMORY: return L"D3DERR_OUTOFVIDEOMEMORY";
+    case D3DERR_INVALIDDEVICE: return L"D3DERR_INVALIDDEVICE";
+    case D3DERR_INVALIDCALL: return L"D3DERR_INVALIDCALL";
+    case D3DERR_DRIVERINVALIDCALL: return L"D3DERR_DRIVERINVALIDCALL";
+    default: return L"Unknown: " + StringOperations::toHexStringW(status);
+    };
+}
+
 int D3DCreateResultEntry = 0x1095B986;
 __declspec(naked) void D3DCreateResult() {
     static int Return = 0x1095B98C;
@@ -503,87 +530,65 @@ void OnDeviceCreated() {
     }
 }
 
-HRESULT CreateDeviceOverride(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface) {
-    if (pDevice == nullptr) {
-        Logger::log("d3d->CreateDevice:");
-        PrintParams(pPresentationParameters);
-        auto result = d3d->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
-        pDevice = *ppReturnedDeviceInterface;
-        return result;
+HRESULT CreateDevice(D3DPRESENT_PARAMETERS* pPresentationParameters, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, IDirect3DDevice8** ppReturnedDeviceInterface)
+{
+    Logger::log("d3d->CreateDevice:");
+    PrintParams(pPresentationParameters);
+    auto result = d3d->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+    pDevice = *ppReturnedDeviceInterface;
+    return result;
+}
+
+HRESULT ResetDevice()
+{
+    HRESULT result = D3DERR_NOTFOUND;
+
+    HRESULT testCooperativeLevel;
+    int maxAttempts = 100;
+
+    for (int i = 0; i < maxAttempts; ++i) {
+        testCooperativeLevel = pDevice->TestCooperativeLevel();
+
+        if (testCooperativeLevel != D3DERR_DEVICELOST) {
+            Logger::log("Device not lost.  Attempting reset.");
+            break;
+        }
+
+        Logger::log("Device is lost, retrying...");
+        Sleep(50);
     }
-    else {
-        HRESULT result = D3DERR_NOTFOUND;
 
-        HRESULT testCooperativeLevel;
-        int maxAttempts = 100;
-
-        for (int i = 0; i < maxAttempts; ++i) {
-            testCooperativeLevel = pDevice->TestCooperativeLevel();
-
-            if (testCooperativeLevel != D3DERR_DEVICELOST) {
-                Logger::log("Device cooperative level is OK or reset required.");
-                break;
-            }
-
-            Logger::log("Device is lost, retrying...");
-            Sleep(50); 
+    Logger::log(std::format(L"Cooperation level: {}", D3DErrorToString(testCooperativeLevel)));
+    switch (testCooperativeLevel) {
+    case D3D_OK:
+    case D3DERR_DEVICENOTRESET:
+    {
+        Logger::log("pDevice->Reset:");
+        PrintParams(&d3dppReplacement);
+        result = pDevice->Reset(&d3dppReplacement);
+        if (!SUCCEEDED(result)) {
+            auto d3dError = D3DErrorToString(result);
+            Logger::log(L"Reset result: " + d3dError);
         }
-
-        if (testCooperativeLevel == D3DERR_DEVICELOST) {
-            Logger::log("Device is still lost after 5 seconds.");
-        }
-
-        Logger::log(std::format("Cooperation level {:#x}", testCooperativeLevel));
-        switch (testCooperativeLevel) {
-        case D3DERR_DEVICELOST:
-            Logger::log("D3DERR_DEVICELOST");
-            break;
-        case D3DERR_NOTAVAILABLE:
-            Logger::log("D3DERR_NOTAVAILABLE");
-            break;
-        case D3DERR_NOTFOUND:
-            Logger::log("D3DERR_NOTFOUND");
-            break;
-        case D3D_OK:
-        case D3DERR_DEVICENOTRESET:
-        {
-            Logger::log("D3DERR_DEVICENOTRESET | D3D_OK");
-            Logger::log("pDevice->Reset:");
-            PrintParams(&d3dppReplacement);
-            result = pDevice->Reset(&d3dppReplacement);
-            if (!SUCCEEDED(result)) {
-                switch (result) {
-                case D3DERR_DEVICELOST:
-                    Logger::log("Error: Device lost and cannot be reset at this time.");
-                    break;
-                case D3DERR_DEVICENOTRESET:
-                    Logger::log("Error: Device is lost but can be reset.");
-                    break;
-                case D3DERR_OUTOFVIDEOMEMORY:
-                    Logger::log("Error: Out of video memory.");
-                    break;
-                case E_OUTOFMEMORY:
-                    Logger::log("Error: Out of system memory.");
-                    break;
-                case D3DERR_INVALIDCALL:
-                    Logger::log("Error: Invalid function call.");
-                    break;
-                default:
-                    Logger::log(std::format("Error: Unknown error, HRESULT = {:#x}", result));
-                    break;
-                }
-            }
-            else {
-                Logger::log("Reset successful.");
-            }
+        else {
+            Logger::log("Reset successful.");
         }
         break;
-        default:
-            Logger::log("Unexpected TestCooperativeLevel result");
-            break;
-        }
+    }
+    default:
+        Logger::log("Cooperation level does not allow device to be reset.");
+        break;
+    }
 
-        return  result;
+    return  result;
+}
+
+HRESULT CreateDeviceOverride(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface) {
+    if (pDevice == nullptr) {
+        return CreateDevice(pPresentationParameters, Adapter, DeviceType, hFocusWindow, BehaviorFlags, ppReturnedDeviceInterface);
+    }
+    else {
+        return ResetDevice();
     }
 }
 
@@ -1114,10 +1119,32 @@ __declspec(naked) void lodOverride() {
     }
 }
 
+void PrintUncooperative(HRESULT coopStatus) {
+    Logger::log(L"Uncooperative: " + D3DErrorToString(coopStatus));
+}
+
+static int uncooperativeEntry = 0x1095E0B1;
+__declspec(naked) void uncooperative() {
+    static HRESULT coopStatus;
+    __asm {
+        pushad
+        mov dword ptr[coopStatus], eax
+    }
+    PrintUncooperative(coopStatus);
+    static int Return = 0x1095E0B6;
+    __asm {
+        popad
+        cmp     eax, 0x88760868
+        jmp dword ptr[Return]
+    }
+}
+
 void Graphics::Initialize()
 {
     if (Config::animation_fix)
         MemoryWriter::WriteJump(animatedTextureFixEntry, animatedTextureFix);
+
+    MemoryWriter::WriteJump(uncooperativeEntry, uncooperative);
 
     MemoryWriter::WriteJump(startFrameTimerEntry, beforePresent);
     MemoryWriter::WriteJump(alternativeFrameModeEntry, alternativeFrameMode);
