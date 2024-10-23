@@ -287,10 +287,13 @@ void ProcessD3DPresentParameters(D3DPRESENT_PARAMETERS* d3dpp) {
         d3dppReplacement.FullScreen_RefreshRateInHz = maxRefreshRate;
     }
 
-    displayModePairs = GetDisplayModesWithHighestRefreshRate();
-    Graphics::videoSettingsDisplayModes = VideoSettingsDisplayOutput();
-    Graphics::videoSettingsDisplayModesCmd = VideoSettingsDisplayCmd();
-
+    static bool displayModesInitialized = false;
+    if (!displayModesInitialized) {
+        displayModePairs = GetDisplayModesWithHighestRefreshRate();
+        Graphics::videoSettingsDisplayModes = VideoSettingsDisplayOutput();
+        Graphics::videoSettingsDisplayModesCmd = VideoSettingsDisplayCmd();
+        displayModesInitialized = true;
+    }
     //if (caps->MaxAnisotropy != 0) {
     //    UINT qualityLevels;
 
