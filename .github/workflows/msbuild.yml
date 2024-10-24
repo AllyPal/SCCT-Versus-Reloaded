@@ -33,14 +33,20 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
 
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+
     - name: Download d3d8.dll
       run: |
-        curl -L -o d3d8.dll https://github.com/crosire/d3d8to9/releases/download/v1.12.0/d3d8.dll
+        curl -L -o Release/d3d8.dll https://github.com/crosire/d3d8to9/releases/download/v1.12.0/d3d8.dll
         
     - name: Verify d3d8.dll hash
       run: |
         $expected_hash = "1E0096ED7A5C8E19F7840CC8117BC40899300632DA077CE66F74EBCD250A5038"
-        $actual_hash = (Get-FileHash d3d8.dll -Algorithm SHA256).Hash.ToUpper()
+        $actual_hash = (Get-FileHash Release/d3d8.dll -Algorithm SHA256).Hash.ToUpper()
     
         Write-Host "Expected hash: $expected_hash"
         Write-Host "Actual hash: $actual_hash"
@@ -51,12 +57,6 @@ jobs:
         } else {
           Write-Host "Hash verified. File is correct."
         }
-
-    - name: Build
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      # Add additional options to the MSBuild command line here (like platform or verbosity level).
-      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
     
     - uses: actions/upload-artifact@v4
       with:
