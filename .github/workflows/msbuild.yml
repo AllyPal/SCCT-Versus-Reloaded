@@ -42,7 +42,18 @@ jobs:
     - name: Download d3d8.dll
       run: |
         curl -L -o Release/d3d8.dll https://github.com/crosire/d3d8to9/releases/download/v1.12.0/d3d8.dll
-
+        
+    - name: Verify d3d8.dll hash
+      run: |
+        echo "$(sha256sum Release/d3d8.dll)"
+        echo "$(sha256sum Release/d3d8.dll | awk '{print $1}')" > downloaded_hash.txt
+        if [ "$(cat downloaded_hash.txt)" != "1E0096ED7A5C8E19F7840CC8117BC40899300632DA077CE66F74EBCD250A5038" ]; then
+          echo "Hash mismatch! Downloaded file is incorrect."
+          exit 1
+        else
+          echo "Hash verified. File is correct."
+        fi
+    
     - uses: actions/upload-artifact@v4
       with:
         # Name of the artifact to upload.
