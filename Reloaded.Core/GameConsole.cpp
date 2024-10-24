@@ -354,7 +354,7 @@ static void OnCbUpdated(GUICb* cb) {
 
     std::wstring displayText = messageQueue.front();
 
-    wchar_t* heapText = (wchar_t*)UnrealMemory::UMalloc((displayText.size() + 1) * sizeof(wchar_t));
+    wchar_t* heapText = (wchar_t*)UnrealMemory::malloc((displayText.size() + 1) * sizeof(wchar_t));
     if (heapText == nullptr) {
         throw std::exception("Failed to allocate memory.");
     }

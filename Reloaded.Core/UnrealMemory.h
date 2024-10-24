@@ -2,5 +2,5 @@
 class UnrealMemory
 {
 public:
-	static void* UMalloc(size_t size);
+	static void* malloc(size_t size);
 };

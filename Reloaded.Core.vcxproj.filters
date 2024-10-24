@@ -60,6 +60,9 @@
     <ClInclude Include="Reloaded.Core\Fonts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Reloaded.Core\UnrealMemory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Reloaded.Core\dllmain.cpp">
@@ -93,6 +96,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Reloaded.Core\Fonts.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Reloaded.Core\UnrealMemory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
