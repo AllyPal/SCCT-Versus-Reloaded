@@ -145,26 +145,31 @@ static uint32_t sResOriginal;
 static uint32_t sResCountOriginal;
 static uint32_t sResCount2Original;
 
-void onPageUpdate(GUIPageWaitLaunch* page)
+void onPageUpdate(GUIPage* page)
 {
-    static GUIPageWaitLaunch* lastPage;
+    static GUIPage* lastPage;
     if (page != lastPage && page->Title() != nullptr) {
-        if (wcscmp(page->Title(), L"Game Options") == 0) {
+        auto pageName = page->Parent()->Name();
+        if (wcscmp(pageName, L"Controller_Settings") == 0) {
             page->Components()->GetControl(3)->Components()->GetControl(2)->flags() &= ~8;
         }
-        else if (wcscmp(page->Title(), L"Video Options") == 0) {
+        else if (wcscmp(pageName, L"Video_Settings") == 0) {
             // Restore original pointer when we're done so it's freed
             page->sResArray().sRes() = sResOriginal;
             page->sResArray().sResCount() = sResCountOriginal;
             page->sResArray().sResCount2() = sResCount2Original;
+        }
+        else if (wcscmp(pageName, L"Menu_Multi") == 0) {
+            page->Components()->GetControl(2)->flags() = 0;
         }
     }
     lastPage = page;
 }
 
 int GuiPageWaitUpdateEntry = 0x10C02C58;
+int GuiPageWaitUpdateEntry2 = 0x10C02D08;
 __declspec(naked) void GuiPageWaitUpdate() {
-    static GUIPageWaitLaunch* page;
+    static GUIPage* page;
     __asm {
         pushad
         mov [page], ecx
@@ -180,7 +185,10 @@ __declspec(naked) void GuiPageWaitUpdate() {
 void HideConsoleWindow() {
 #ifndef _DEBUG
     HWND consoleWindow = GetConsoleWindow();
-    ShowWindow(consoleWindow, SW_HIDE);
+    FreeConsole();
+    if (consoleWindow != NULL) {
+        PostMessage(consoleWindow, WM_CLOSE, 0, 0);
+    }
 #endif
 }
 
@@ -208,24 +216,26 @@ __declspec(naked) void SPlaProCreated() {
     }
 }
 
-void onPageLoad(GUIPageWaitLaunch* page)
+void onPageLoad(GUIPage* page)
 {
-    static GUIPageWaitLaunch* lastPage;
-    if (page != lastPage && page->Title() != nullptr && wcscmp(page->Title(), L"Video Options") == 0) {
-        sResOriginal = page->sResArray().sRes();
-        sResCountOriginal = page->sResArray().sResCount();
-        sResCount2Original = page->sResArray().sResCount2();
+    static GUIPage* lastPage;
+    if (page != lastPage && page->Title() != nullptr) {
+        if (wcscmp(page->Parent()->Name(), L"Video_Settings") == 0) {
+            sResOriginal = page->sResArray().sRes();
+            sResCountOriginal = page->sResArray().sResCount();
+            sResCount2Original = page->sResArray().sResCount2();
 
-        page->sResArray().sRes() = reinterpret_cast<uintptr_t>(Graphics::videoSettingsDisplayModes);
-        page->sResArray().sResCount() = Graphics::GetResolutionCount();
-        page->sResArray().sResCount2() = Graphics::GetResolutionCount();
+            page->sResArray().sRes() = reinterpret_cast<uintptr_t>(Graphics::videoSettingsDisplayModes);
+            page->sResArray().sResCount() = Graphics::GetResolutionCount();
+            page->sResArray().sResCount2() = Graphics::GetResolutionCount();
+        }
     }
     lastPage = page;
 }
 
 int GuiPageWaitLoadEntry = 0x10A66746;
 __declspec(naked) void GuiPageWaitLoad() {
-    static GUIPageWaitLaunch* page;
+    static GUIPage* page;
     __asm {
         je skip
         mov dword ptr[eax], 0x10C02C40
@@ -458,19 +468,10 @@ bool ValidateState(int newState, PlC* plc) {
 }
 
 wchar_t* StateName(int id) {
-    static wchar_t* stringPtr;
-    __asm {
-        push eax
-        push ebx
-        mov     eax, dword ptr[id]
-        mov     ebx, dword ptr[0x10CC9E5C];
-        mov     ebx, [ebx]
-        mov     eax, [ebx + eax * 0x4]
-        add     eax, 0xC
-        mov     dword ptr[stringPtr], eax
-        pop ebx
-        pop eax
-    }
+    auto basePtr = *reinterpret_cast<int**>(0x10CC9E5C);
+    auto elementPtr = reinterpret_cast<int*>(basePtr[id]);
+    auto stringPtr = reinterpret_cast<wchar_t*>(reinterpret_cast<int>(elementPtr) + 0xC);
+
     return stringPtr;
 }
 
@@ -559,7 +560,7 @@ static void InitLabelOverrides() {
     Engine::SetLabelOverride(L"TitlePage", L"LAN_Seek_Games_List", L"Reloaded Server List");
     Engine::SetLabelOverride(L"TitlePage", L"LAN_Menu", L"Reloaded Session");
     Engine::SetLabelOverride(L"TitrePage.Caption", L"LAN_Menu", L"Reloaded Session");
-    Engine::SetLabelOverride(L"MainPage_Live.Caption", L"Menu_Multi", L" ");
+    Engine::SetLabelOverride(L"TitlePage", L"Lobby_Create", L"Reloaded Lobby");
     Engine::SetLabelOverride(L"MainPage_LAN.Caption", L"Menu_Multi", L"Play Multiplayer");
 
     HKL layout = GetKeyboardLayout(0);
@@ -588,10 +589,14 @@ static void InitLabelOverrides() {
     }
 }
 
-void PrintTextEntry(wchar_t* _eax, wchar_t* _edi, wchar_t* _ebp, wchar_t* result) {
-    if (result != nullptr) {
-        std::wcout << std::format(L"languageName:{} controlName:{} menuName:{} current: {}", _eax, _edi, _ebp, result) << std::endl;
+void PrintTextEntry(wchar_t* languageName, wchar_t* controlName, wchar_t* menuName, wchar_t* current) {
+    
+    const wchar_t* setting = current;
+    if (setting == nullptr) {
+        setting = L" ";
     }
+    
+    std::wcout << std::format(L"Engine::SetLabelOverride(L\"{}\", L\"{}\", L\"{}\");", controlName, menuName, setting) << std::endl;
 }
 
 wchar_t* OverrideLabel(wchar_t* languageName, wchar_t* controlName, wchar_t* menuName, wchar_t* current) {
@@ -949,6 +954,7 @@ void Engine::Initialize()
     MemoryWriter::WriteJump(LoadTextEntry, LoadText);
 
     MemoryWriter::WriteFunctionPtr(GuiPageWaitUpdateEntry, GuiPageWaitUpdate);
+    MemoryWriter::WriteFunctionPtr(GuiPageWaitUpdateEntry2, GuiPageWaitUpdate);
     MemoryWriter::WriteJump(GuiPageWaitLoadEntry, GuiPageWaitLoad);
     MemoryWriter::WriteJump(SPlaProCreatedEntry, SPlaProCreated);
     MemoryWriter::WriteJump(PitchYawInputEntry, PitchYawInput);

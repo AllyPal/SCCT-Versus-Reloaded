@@ -61,4 +61,22 @@ public:
             });
         return result;
     }
+
+    static std::string join(const std::vector<std::string>& vec, const std::string& delimiter) {
+        std::ostringstream oss;
+        for (size_t i = 0; i < vec.size(); ++i) {
+            if (i != 0) oss << delimiter;
+            oss << vec[i];
+        }
+        return oss.str();
+    }
+    
+    static std::wstring join(const std::vector<std::wstring>& vec, const std::wstring& delimiter) {
+        std::wostringstream woss;
+        for (size_t i = 0; i < vec.size(); ++i) {
+            if (i != 0) woss << delimiter;
+            woss << vec[i];
+        }
+        return woss.str();
+    }
 };

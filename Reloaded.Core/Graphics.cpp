@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Graphics.h"
 #include "include/d3d8/d3d8.h"
+#include "d3d9.h"
 #include <format>
 #include <set>
 #include <iostream>
@@ -25,6 +26,33 @@ static int RenderHeight = 0;
 static std::vector<DisplayModePair> displayModePairs;
 UcString* Graphics::videoSettingsDisplayModes;
 UcString* Graphics::videoSettingsDisplayModesCmd;
+
+std::wstring D3DErrorToString(HRESULT status) {
+    switch (status) {
+    case D3DERR_WRONGTEXTUREFORMAT: return L"D3DERR_WRONGTEXTUREFORMAT";
+    case D3DERR_UNSUPPORTEDCOLOROPERATION: return L"D3DERR_UNSUPPORTEDCOLOROPERATION";
+    case D3DERR_UNSUPPORTEDCOLORARG: return L"D3DERR_UNSUPPORTEDCOLORARG";
+    case D3DERR_UNSUPPORTEDALPHAOPERATION: return L"D3DERR_UNSUPPORTEDALPHAOPERATION";
+    case D3DERR_UNSUPPORTEDALPHAARG: return L"D3DERR_UNSUPPORTEDALPHAARG";
+    case D3DERR_TOOMANYOPERATIONS: return L"D3DERR_TOOMANYOPERATIONS";
+    case D3DERR_CONFLICTINGTEXTUREFILTER: return L"D3DERR_CONFLICTINGTEXTUREFILTER";
+    case D3DERR_UNSUPPORTEDFACTORVALUE: return L"D3DERR_UNSUPPORTEDFACTORVALUE";
+    case D3DERR_CONFLICTINGRENDERSTATE: return L"D3DERR_CONFLICTINGRENDERSTATE";
+    case D3DERR_UNSUPPORTEDTEXTUREFILTER: return L"D3DERR_UNSUPPORTEDTEXTUREFILTER";
+    case D3DERR_CONFLICTINGTEXTUREPALETTE: return L"D3DERR_CONFLICTINGTEXTUREPALETTE";
+    case D3DERR_DRIVERINTERNALERROR: return L"D3DERR_DRIVERINTERNALERROR";
+    case D3DERR_NOTFOUND: return L"D3DERR_NOTFOUND";
+    case D3DERR_MOREDATA: return L"D3DERR_MOREDATA";
+    case D3DERR_DEVICELOST: return L"D3DERR_DEVICELOST";
+    case D3DERR_DEVICENOTRESET: return L"D3DERR_DEVICENOTRESET";
+    case D3DERR_NOTAVAILABLE: return L"D3DERR_NOTAVAILABLE";
+    case D3DERR_OUTOFVIDEOMEMORY: return L"D3DERR_OUTOFVIDEOMEMORY";
+    case D3DERR_INVALIDDEVICE: return L"D3DERR_INVALIDDEVICE";
+    case D3DERR_INVALIDCALL: return L"D3DERR_INVALIDCALL";
+    case D3DERR_DRIVERINVALIDCALL: return L"D3DERR_DRIVERINVALIDCALL";
+    default: return L"Unknown: " + StringOperations::toHexStringW(status);
+    };
+}
 
 int D3DCreateResultEntry = 0x1095B986;
 __declspec(naked) void D3DCreateResult() {
@@ -55,19 +83,18 @@ int GetMaxRefreshRate(UINT displayWidth, UINT displayHeight) {
 }
 
 void PrintParams(D3DPRESENT_PARAMETERS* d3dpp) {
-    std::cout << "BackBufferWidth: " << d3dpp->BackBufferWidth << std::endl;
-    std::cout << "BackBufferHeight: " << d3dpp->BackBufferHeight << std::endl;
-    std::cout << "BackBufferFormat: " << d3dpp->BackBufferFormat << std::endl;
-    std::cout << "BackBufferCount: " << d3dpp->BackBufferCount << std::endl;
-    std::cout << "MultiSampleType: " << d3dpp->MultiSampleType << std::endl;
-    std::cout << "SwapEffect: " << d3dpp->SwapEffect << std::endl;
-    std::cout << "hDeviceWindow: " << d3dpp->hDeviceWindow << std::endl;
-    std::cout << "Windowed: " << d3dpp->Windowed << std::endl;
-    std::cout << "EnableAutoDepthStencil: " << d3dpp->EnableAutoDepthStencil << std::endl;
-    std::cout << "AutoDepthStencilFormat: " << d3dpp->AutoDepthStencilFormat << std::endl;
-    std::cout << "Flags: " << d3dpp->Flags << std::endl;
-    std::cout << "FullScreen_RefreshRateInHz: " << d3dpp->FullScreen_RefreshRateInHz << std::endl;
-    std::cout << "FullScreen_PresentationInterval: " << d3dpp->FullScreen_PresentationInterval << std::endl;
+    std::cout << std::format("BackBufferWidth: {}",  d3dpp->BackBufferWidth) << std::endl;
+    std::cout << std::format("BackBufferHeight: {}",  d3dpp->BackBufferHeight) << std::endl;
+    std::cout << std::format("BackBufferFormat: {:#x}", static_cast<int>(d3dpp->BackBufferFormat)) << std::endl;
+    std::cout << std::format("BackBufferCount: {}",  d3dpp->BackBufferCount) << std::endl;
+    std::cout << std::format("MultiSampleType: {:#x}", static_cast<int>(d3dpp->MultiSampleType)) << std::endl;
+    std::cout << std::format("SwapEffect: {:#x}", static_cast<int>(d3dpp->SwapEffect)) << std::endl;
+    std::cout << std::format("Windowed: {}",  d3dpp->Windowed) << std::endl;
+    std::cout << std::format("EnableAutoDepthStencil: {}",  d3dpp->EnableAutoDepthStencil) << std::endl;
+    std::cout << std::format("AutoDepthStencilFormat: {:#x}", static_cast<int>(d3dpp->AutoDepthStencilFormat)) << std::endl;
+    std::cout << std::format("Flags: {:#x}",  d3dpp->Flags) << std::endl;
+    std::cout << std::format("FullScreen_RefreshRateInHz: {}",  d3dpp->FullScreen_RefreshRateInHz) << std::endl;
+    std::cout << std::format("FullScreen_PresentationInterval: {:#x}", d3dpp->FullScreen_PresentationInterval) << std::endl;
 }
 
 std::string GetClosestAspectRatio(UINT width, UINT height) {
@@ -261,11 +288,13 @@ void ProcessD3DPresentParameters(D3DPRESENT_PARAMETERS* d3dpp) {
         d3dppReplacement.FullScreen_RefreshRateInHz = maxRefreshRate;
     }
 
-    displayModePairs = GetDisplayModesWithHighestRefreshRate();
-    Graphics::videoSettingsDisplayModes = VideoSettingsDisplayOutput();
-    Graphics::videoSettingsDisplayModesCmd = VideoSettingsDisplayCmd();
-
-    //Engine::SetLabelOverride(L"sRes", L"Video_Settings", output);
+    static bool displayModesInitialized = false;
+    if (!displayModesInitialized) {
+        displayModePairs = GetDisplayModesWithHighestRefreshRate();
+        Graphics::videoSettingsDisplayModes = VideoSettingsDisplayOutput();
+        Graphics::videoSettingsDisplayModesCmd = VideoSettingsDisplayCmd();
+        displayModesInitialized = true;
+    }
     //if (caps->MaxAnisotropy != 0) {
     //    UINT qualityLevels;
 
@@ -505,52 +534,96 @@ void OnDeviceCreated() {
     }
 }
 
-HRESULT CreateDeviceOverride(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface) {
-    if (pDevice == nullptr) {
-        debug_cout << "CreateDevice" << std::endl;
-        auto result = d3d->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
-        pDevice = *ppReturnedDeviceInterface;
-        return result;
+/*
+  Credit to https://github.com/crosire/reshade 
+  
+  Direct3D9SetSwapEffectUpgradeShim has been taken from:
+  https://github.com/crosire/reshade/commit/3fe0b050706fb9f3510ed48d619cad71f7cb28f2#diff-74772e50e2921e0bf69f0470e81d072d30c071b6e4b30af8cfd6cda58cf249eeR35
+  and lightly modified.
+  
+  Copyright (C) 2014 Patrick Mours. All rights reserved.
+  License: https://github.com/crosire/reshade#license
+*/
+void WINAPI Direct3D9SetSwapEffectUpgradeShim(int unknown = 0)
+{
+    auto d3d9 = GetModuleHandleA("d3d9.dll");
+    if (!d3d9)
+    {
+        Logger::log("d3d9.dll not loaded");
+        return;
     }
-    else {
-        HRESULT result = D3DERR_NOTFOUND;
-        switch (pDevice->TestCooperativeLevel()) {
-        case D3D_OK:
-        case D3DERR_DEVICENOTRESET:
-        {
-            debug_cout << "Reset" << std::endl;
-            debug_cout << "W: " << d3dppReplacement.BackBufferWidth << "H: " << d3dppReplacement.BackBufferHeight << std::endl;
-            result = pDevice->Reset(&d3dppReplacement);
-            if (!SUCCEEDED(result)) {
-                switch (result) {
-                case D3DERR_DEVICELOST:
-                    debug_cout << "Error: Device lost and cannot be reset at this time." << std::endl;
-                    break;
-                case D3DERR_DEVICENOTRESET:
-                    debug_cout << "Error: Device is lost but can be reset." << std::endl;
-                    break;
-                case D3DERR_OUTOFVIDEOMEMORY:
-                    debug_cout << "Error: Out of video memory." << std::endl;
-                    break;
-                case E_OUTOFMEMORY:
-                    debug_cout << "Error: Out of system memory." << std::endl;
-                    break;
-                case D3DERR_INVALIDCALL:
-                    debug_cout << "Error: Invalid function call." << std::endl;
-                    break;
-                default:
-                    debug_cout << "Error: Unknown error, HRESULT = " << std::hex << result << std::endl;
-                    break;
-                }
-            }
-        }
-            break;
-        default:
-            debug_cout << "Unexpected TestCooperativeLevel result" << std::endl;
+
+    auto setSwapEffectUpgradeShim = GetProcAddress(d3d9, reinterpret_cast<LPCSTR>(18));
+    if (!setSwapEffectUpgradeShim)
+    {
+        Logger::log("Unknown ordinal in d3d9.dll");
+        return;
+    }
+
+    Logger::log("Direct3D9SetSwapEffectUpgradeShim(0)");
+    reinterpret_cast<decltype(&Direct3D9SetSwapEffectUpgradeShim)>(setSwapEffectUpgradeShim)(unknown);
+}
+
+HRESULT CreateDevice(D3DPRESENT_PARAMETERS* pPresentationParameters, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, IDirect3DDevice8** ppReturnedDeviceInterface)
+{
+    Direct3D9SetSwapEffectUpgradeShim();
+    Logger::log("d3d->CreateDevice:");
+    PrintParams(pPresentationParameters);
+    auto result = d3d->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+    pDevice = *ppReturnedDeviceInterface;
+    return result;
+}
+
+HRESULT ResetDevice()
+{
+    HRESULT result = D3DERR_NOTFOUND;
+
+    HRESULT testCooperativeLevel;
+    int maxAttempts = 100;
+
+    for (int i = 0; i < maxAttempts; ++i) {
+        testCooperativeLevel = pDevice->TestCooperativeLevel();
+
+        if (testCooperativeLevel != D3DERR_DEVICELOST) {
+            debug_cout << "Device not lost.  Attempting reset." << std::endl;
             break;
         }
 
-        return  result;
+        debug_cout << "Device is lost, retrying..." << std::endl;
+        Sleep(50);
+    }
+
+    debug_wcout << std::format(L"Cooperation level: {}", D3DErrorToString(testCooperativeLevel)) << std::endl;
+    switch (testCooperativeLevel) {
+    case D3D_OK:
+    case D3DERR_DEVICENOTRESET:
+    {
+        debug_cout << "pDevice->Reset:"  << std::endl;
+        PrintParams(&d3dppReplacement);
+        result = pDevice->Reset(&d3dppReplacement);
+        if (!SUCCEEDED(result)) {
+            auto d3dError = D3DErrorToString(result);
+            debug_wcout << L"Reset result: " + d3dError << std::endl;
+        }
+        else {
+            debug_cout << "Reset successful." << std::endl;
+        }
+        break;
+    }
+    default:
+        debug_cout << "Cooperation level does not allow device to be reset." << std::endl;
+        break;
+    }
+
+    return  result;
+}
+
+HRESULT CreateDeviceOverride(UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface) {
+    if (pDevice == nullptr) {
+        return CreateDevice(pPresentationParameters, Adapter, DeviceType, hFocusWindow, BehaviorFlags, ppReturnedDeviceInterface);
+    }
+    else {
+        return ResetDevice();
     }
 }
 

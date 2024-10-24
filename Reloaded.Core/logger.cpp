@@ -11,8 +11,35 @@
 #include <thread>
 #include <memory>
 #include <chrono>
+#include <ctime>
 
 static std::wstring logFilePath;
+
+std::string TimePrefix() {
+    auto now = std::chrono::system_clock::now();
+    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+    std::tm localTime;
+
+    // Use localtime_s for thread safety
+    localtime_s(&localTime, &currentTime);
+
+    std::ostringstream oss;
+    oss << std::put_time(&localTime, "[%H:%M:%S] ");
+    return oss.str();
+}
+
+std::wstring TimePrefixW() {
+    auto now = std::chrono::system_clock::now();
+    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+    std::tm localTime;
+
+    // Use localtime_s for thread safety
+    localtime_s(&localTime, &currentTime);
+
+    std::wostringstream woss;
+    woss << std::put_time(&localTime, L"[%H:%M:%S] ");
+    return woss.str();
+}
 
 void Logger::log(const std::string& message) {
     std::ofstream logFile(logFilePath, std::ios::app);
@@ -20,9 +47,11 @@ void Logger::log(const std::string& message) {
         std::cerr << "Error: Could not open the file for logging." << std::endl;
         return;
     }
-
-    logFile << message << std::endl;
+    auto output = TimePrefix() + message;
+    logFile << output << std::endl;
     logFile.close();
+
+    debug_cout << output << std::endl;
 }
 
 void Logger::log(const std::wstring& message) {
@@ -31,9 +60,11 @@ void Logger::log(const std::wstring& message) {
         std::wcerr << L"Error: Could not open the file for logging." << std::endl;
         return;
     }
-
-    logFile << message << std::endl;
+    auto output = TimePrefixW() + message;
+    logFile << output << std::endl;
     logFile.close();
+
+    debug_wcout << output << std::endl;
 }
 
 void Logger::Initialize(const std::wstring& dllPath)

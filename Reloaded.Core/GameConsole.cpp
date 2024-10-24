@@ -15,6 +15,9 @@
 #include "GameStructs.h"
 #include "Fonts.h"
 #include "Debug.h"
+#include "Engine.h"
+#include <queue>
+#include "UnrealMemory.h"
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "winmm.lib")
 
@@ -311,8 +314,77 @@ __declspec(naked) void ConsoleInput() {
     }
 }
 
+static std::queue<std::wstring> messageQueue;
+
+void ClearMessageQueue()
+{
+    while (!messageQueue.empty()) {
+        messageQueue.pop();
+    }
+}
+
+void GameConsole::WriteChatBox(std::wstring displayText) {
+    messageQueue.push(cb_prefix + displayText);
+}
+
+void OnCbCreated() {
+    ClearMessageQueue();
+    if (Engine::IsListenServer()) {
+        GameConsole::WriteChatBox(L"Starting Reloaded v1.0 lobby");
+    }
+}
+
+static int CbCreatedEntry = 0x10A66D88;
+__declspec(naked) void CbCreated() {
+    __asm {
+        mov     dword ptr[eax], 0x10C02800
+        pushad
+    }
+    OnCbCreated();
+    __asm {
+        popad
+        ret
+    }
+}
+
+static void OnCbUpdated(GUICb* cb) {
+    if (messageQueue.empty() || cb->Input().text != nullptr) {
+        return;
+    }
+
+    std::wstring displayText = messageQueue.front();
+
+    wchar_t* heapText = (wchar_t*)UnrealMemory::malloc((displayText.size() + 1) * sizeof(wchar_t));
+    if (heapText == nullptr) {
+        throw std::exception("Failed to allocate memory.");
+    }
+    std::copy(displayText.begin(), displayText.end(), heapText);
+    heapText[displayText.size()] = L'\0';
+    cb->Input().text = heapText;
+    cb->Input().length = static_cast<int>(displayText.size() + 1);
+    cb->Input().alsoLength = static_cast<int>(displayText.size() + 1);
+    messageQueue.pop();
+}
+
+static int CbUpdatedEntry = 0x10C02858;
+__declspec(naked) void CbUpdated() {
+    static GUICb* cb;
+    __asm {
+        mov dword ptr[cb], ecx
+        pushad
+    }
+    OnCbUpdated(cb);
+    static int Return = 0x10A61B20;
+    __asm {
+        popad
+        jmp dword ptr[Return]
+    }
+}
+
 void GameConsole::Initialize()
 {
+    MemoryWriter::WriteJump(CbCreatedEntry, CbCreated);
+    MemoryWriter::WriteFunctionPtr(CbUpdatedEntry, CbUpdated);
     MemoryWriter::WriteJump(ConsoleInputEntry, ConsoleInput);
     MemoryWriter::WriteJump(setThisConsoleEntry, setThisConsole);
     MemoryWriter::WriteJump(ConsoleCreatedEntry, ConsoleCreated);
