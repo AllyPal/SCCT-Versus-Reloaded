@@ -39,18 +39,18 @@ jobs:
         
     - name: Verify d3d8.dll hash
       run: |
-        expected_hash="1E0096ED7A5C8E19F7840CC8117BC40899300632DA077CE66F74EBCD250A5038"
-        actual_hash=$(sha256sum d3d8.dll | awk '{print $1}')
-        
-        echo "Expected hash: $expected_hash"
-        echo "Actual hash: $actual_hash"
-        
-        if [ "$actual_hash" != "$expected_hash" ]; then
-          echo "Hash mismatch! Downloaded file is incorrect."
+        $expected_hash = "1E0096ED7A5C8E19F7840CC8117BC40899300632DA077CE66F74EBCD250A5038"
+        $actual_hash = (Get-FileHash d3d8.dll -Algorithm SHA256).Hash.ToUpper()
+    
+        Write-Host "Expected hash: $expected_hash"
+        Write-Host "Actual hash: $actual_hash"
+    
+        if ($actual_hash -ne $expected_hash) {
+          Write-Host "Hash mismatch! Downloaded file is incorrect."
           exit 1
-        else
-          echo "Hash verified. File is correct."
-        fi
+        } else {
+          Write-Host "Hash verified. File is correct."
+        }
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
