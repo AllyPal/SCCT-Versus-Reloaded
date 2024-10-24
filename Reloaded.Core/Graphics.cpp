@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Graphics.h"
 #include "include/d3d8/d3d8.h"
+#include "d3d9.h"
 #include <format>
 #include <set>
 #include <iostream>
@@ -533,8 +534,39 @@ void OnDeviceCreated() {
     }
 }
 
+/*
+  Credit to https://github.com/crosire/reshade 
+  
+  Direct3D9SetSwapEffectUpgradeShim has been taken from:
+  https://github.com/crosire/reshade/commit/3fe0b050706fb9f3510ed48d619cad71f7cb28f2#diff-74772e50e2921e0bf69f0470e81d072d30c071b6e4b30af8cfd6cda58cf249eeR35
+  and lightly modified.
+  
+  Copyright (C) 2014 Patrick Mours. All rights reserved.
+  License: https://github.com/crosire/reshade#license
+*/
+void WINAPI Direct3D9SetSwapEffectUpgradeShim(int unknown = 0)
+{
+    auto d3d9 = GetModuleHandleA("d3d9.dll");
+    if (!d3d9)
+    {
+        Logger::log("d3d9.dll not loaded");
+        return;
+    }
+
+    auto setSwapEffectUpgradeShim = GetProcAddress(d3d9, reinterpret_cast<LPCSTR>(18));
+    if (!setSwapEffectUpgradeShim)
+    {
+        Logger::log("Unknown ordinal in d3d9.dll");
+        return;
+    }
+
+    Logger::log("Direct3D9SetSwapEffectUpgradeShim(0)");
+    reinterpret_cast<decltype(&Direct3D9SetSwapEffectUpgradeShim)>(setSwapEffectUpgradeShim)(unknown);
+}
+
 HRESULT CreateDevice(D3DPRESENT_PARAMETERS* pPresentationParameters, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, IDirect3DDevice8** ppReturnedDeviceInterface)
 {
+    Direct3D9SetSwapEffectUpgradeShim();
     Logger::log("d3d->CreateDevice:");
     PrintParams(pPresentationParameters);
     auto result = d3d->CreateDevice(Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
@@ -1122,32 +1154,10 @@ __declspec(naked) void lodOverride() {
     }
 }
 
-void PrintUncooperative(HRESULT coopStatus) {
-    Logger::log(L"Uncooperative: " + D3DErrorToString(coopStatus));
-}
-
-static int uncooperativeEntry = 0x1095E0B1;
-__declspec(naked) void uncooperative() {
-    static HRESULT coopStatus;
-    __asm {
-        pushad
-        mov dword ptr[coopStatus], eax
-    }
-    PrintUncooperative(coopStatus);
-    static int Return = 0x1095E0B6;
-    __asm {
-        popad
-        cmp     eax, 0x88760868
-        jmp dword ptr[Return]
-    }
-}
-
 void Graphics::Initialize()
 {
     if (Config::animation_fix)
         MemoryWriter::WriteJump(animatedTextureFixEntry, animatedTextureFix);
-
-    MemoryWriter::WriteJump(uncooperativeEntry, uncooperative);
 
     MemoryWriter::WriteJump(startFrameTimerEntry, beforePresent);
     MemoryWriter::WriteJump(alternativeFrameModeEntry, alternativeFrameMode);

@@ -47,9 +47,11 @@ void Logger::log(const std::string& message) {
         std::cerr << "Error: Could not open the file for logging." << std::endl;
         return;
     }
-    
-    logFile << TimePrefix() << message << std::endl;
+    auto output = TimePrefix() + message;
+    logFile << output << std::endl;
     logFile.close();
+
+    debug_cout << output << std::endl;
 }
 
 void Logger::log(const std::wstring& message) {
@@ -58,9 +60,11 @@ void Logger::log(const std::wstring& message) {
         std::wcerr << L"Error: Could not open the file for logging." << std::endl;
         return;
     }
-
-    logFile << TimePrefixW() << message << std::endl;
+    auto output = TimePrefixW() + message;
+    logFile << output << std::endl;
     logFile.close();
+
+    debug_wcout << output << std::endl;
 }
 
 void Logger::Initialize(const std::wstring& dllPath)
