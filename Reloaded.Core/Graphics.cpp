@@ -83,18 +83,18 @@ int GetMaxRefreshRate(UINT displayWidth, UINT displayHeight) {
 }
 
 void PrintParams(D3DPRESENT_PARAMETERS* d3dpp) {
-    Logger::log(std::format("BackBufferWidth: {}",  d3dpp->BackBufferWidth));
-    Logger::log(std::format("BackBufferHeight: {}",  d3dpp->BackBufferHeight));
-    Logger::log(std::format("BackBufferFormat: {:#x}", static_cast<int>(d3dpp->BackBufferFormat)));
-    Logger::log(std::format("BackBufferCount: {}",  d3dpp->BackBufferCount));
-    Logger::log(std::format("MultiSampleType: {:#x}", static_cast<int>(d3dpp->MultiSampleType)));
-    Logger::log(std::format("SwapEffect: {:#x}", static_cast<int>(d3dpp->SwapEffect)));
-    Logger::log(std::format("Windowed: {}",  d3dpp->Windowed));
-    Logger::log(std::format("EnableAutoDepthStencil: {}",  d3dpp->EnableAutoDepthStencil));
-    Logger::log(std::format("AutoDepthStencilFormat: {:#x}", static_cast<int>(d3dpp->AutoDepthStencilFormat)));
-    Logger::log(std::format("Flags: {:#x}",  d3dpp->Flags));
-    Logger::log(std::format("FullScreen_RefreshRateInHz: {}",  d3dpp->FullScreen_RefreshRateInHz));
-    Logger::log(std::format("FullScreen_PresentationInterval: {:#x}",  d3dpp->FullScreen_PresentationInterval));
+    std::cout << std::format("BackBufferWidth: {}",  d3dpp->BackBufferWidth) << std::endl;
+    std::cout << std::format("BackBufferHeight: {}",  d3dpp->BackBufferHeight) << std::endl;
+    std::cout << std::format("BackBufferFormat: {:#x}", static_cast<int>(d3dpp->BackBufferFormat)) << std::endl;
+    std::cout << std::format("BackBufferCount: {}",  d3dpp->BackBufferCount) << std::endl;
+    std::cout << std::format("MultiSampleType: {:#x}", static_cast<int>(d3dpp->MultiSampleType)) << std::endl;
+    std::cout << std::format("SwapEffect: {:#x}", static_cast<int>(d3dpp->SwapEffect)) << std::endl;
+    std::cout << std::format("Windowed: {}",  d3dpp->Windowed) << std::endl;
+    std::cout << std::format("EnableAutoDepthStencil: {}",  d3dpp->EnableAutoDepthStencil) << std::endl;
+    std::cout << std::format("AutoDepthStencilFormat: {:#x}", static_cast<int>(d3dpp->AutoDepthStencilFormat)) << std::endl;
+    std::cout << std::format("Flags: {:#x}",  d3dpp->Flags) << std::endl;
+    std::cout << std::format("FullScreen_RefreshRateInHz: {}",  d3dpp->FullScreen_RefreshRateInHz) << std::endl;
+    std::cout << std::format("FullScreen_PresentationInterval: {:#x}", d3dpp->FullScreen_PresentationInterval) << std::endl;
 }
 
 std::string GetClosestAspectRatio(UINT width, UINT height) {
@@ -585,33 +585,33 @@ HRESULT ResetDevice()
         testCooperativeLevel = pDevice->TestCooperativeLevel();
 
         if (testCooperativeLevel != D3DERR_DEVICELOST) {
-            Logger::log("Device not lost.  Attempting reset.");
+            debug_cout << "Device not lost.  Attempting reset." << std::endl;
             break;
         }
 
-        Logger::log("Device is lost, retrying...");
+        debug_cout << "Device is lost, retrying..." << std::endl;
         Sleep(50);
     }
 
-    Logger::log(std::format(L"Cooperation level: {}", D3DErrorToString(testCooperativeLevel)));
+    debug_wcout << std::format(L"Cooperation level: {}", D3DErrorToString(testCooperativeLevel)) << std::endl;
     switch (testCooperativeLevel) {
     case D3D_OK:
     case D3DERR_DEVICENOTRESET:
     {
-        Logger::log("pDevice->Reset:");
+        debug_cout << "pDevice->Reset:"  << std::endl;
         PrintParams(&d3dppReplacement);
         result = pDevice->Reset(&d3dppReplacement);
         if (!SUCCEEDED(result)) {
             auto d3dError = D3DErrorToString(result);
-            Logger::log(L"Reset result: " + d3dError);
+            debug_wcout << L"Reset result: " + d3dError << std::endl;
         }
         else {
-            Logger::log("Reset successful.");
+            debug_cout << "Reset successful." << std::endl;
         }
         break;
     }
     default:
-        Logger::log("Cooperation level does not allow device to be reset.");
+        debug_cout << "Cooperation level does not allow device to be reset." << std::endl;
         break;
     }
 
